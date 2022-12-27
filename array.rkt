@@ -1,5 +1,7 @@
-#lang racket
-(require racket/vector)
+#lang racket/base
+(require racket/vector
+         racket/list
+         racket/stream)
 
 (define argument-empty "ArgumentException: Array is empty.")
 
@@ -50,6 +52,18 @@
       [else (loop array (+ 1 index) max)]))
   (loop array 0 (array-head array)))
 
+; Returns the greatest of all elements of the array.
+; TODO: Contracts on types and comparator.
+(define (array-max-by projection array)
+  (when (vector-empty? array)
+    (raise argument-empty))
+  (define (loop projection array index max)
+    (cond
+      [(= index (array-length array)) max]
+      [(projection array) (loop projection array (+ 1 index) (array-get index array))]
+      [else (loop projection array (+ 1 index) max)]))
+  (loop projection array 0 (array-head array)))
+
 ; Builds a new array that contains elements of the first array followed by the elements of the second array.
 (define (array-append first-array second-array)
   (vector-append first-array second-array))
@@ -80,6 +94,12 @@
   (define sum (array-sum array))
   (round (/ sum len)))
 
+(define (array-of-list list)
+  (list->vector list))
+
+(define (array-of-seq seq)
+  (list->vector (stream->list seq)))
+
 ; Applies a key-generating function to each element of an array and yields an array of unique keys.
 ; Each unique key contains an array of all elements that match to this key.
 ; Projection: 'T -> 'Key
@@ -89,14 +109,40 @@
   raise
   "Not implemented.")
 
+(define (array-singleton value)
+  (vector value))
+
+(define (array-skip count array)
+  (vector-drop array count))
+
+(define (array-sort array)
+  (vector-sort array <))
+
 (module+ test
   (require rackunit)
   (define first-array #(1 2 3 4))
   (define second-array #(5 6 7 8))
   (define combined-arrays #(1 2 3 4 5 6 7 8))
+
+  ; Append test
   (check-equal? combined-arrays (array-append first-array second-array))
+  ; Sum test
   (check-equal? 36 (array-sum combined-arrays))
+  ; Average test
   (check-eq? 4 (array-average combined-arrays))
+  ; Head test
   (check-eq? 1 (array-head combined-arrays))
+  ; Last test
   (check-eq? 8 (array-last combined-arrays))
-  (check-eq? 8 (array-max combined-arrays)))
+  ; Max test
+  (check-eq? 8 (array-max combined-arrays))
+  ; OfList test
+  (check-equal? #(1 2 3) (array-of-list (list 1 2 3)))
+  ; OfSeq test
+  (check-equal? #(1 2 3) (array-of-seq (stream 1 2 3)))
+  ; Singleton test
+  (check-equal? #(1) (array-singleton 1))
+  ; Skip test
+  (check-equal? #(3 4) (array-skip 2 #(1 2 3 4)))
+  ; Sort test
+  (check-equal? #(1 2 3 4) (array-sort #(4 2 3 1))))
