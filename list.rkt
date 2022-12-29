@@ -132,6 +132,54 @@
 
   (loop count predicate reverse-source))
 
+(: list-fold (All (T U) (-> (-> U T U) U (Listof T) U)))
+(define (list-fold folder state source)
+  (cond
+    [(null? source) state]
+    [else (list-fold folder (folder state (car source)) (cdr source))]))
+
+(: list-fold-two (All (T U V) (-> (-> U T V U) U (Listof T) (Listof V) U)))
+(define (list-fold-two folder state list-one list-two)
+  (cond
+    [(and (null? list-one) (null? list-two)) state]
+    [(and (null? (cdr list-one)) (not (null? (cdr list-two))))
+     (list-fold-two folder (folder state (car list-one) (car list-two)) list-one (cdr list-two))]
+    [(and (null? (cdr list-two)) (not (null? (cdr list-one))))
+     (list-fold-two folder (folder state (car list-one) (car list-two)) (cdr list-one) list-two)]
+    [else
+     (list-fold-two folder
+                    (folder state (car list-one) (car list-two))
+                    (cdr list-one)
+                    (cdr list-two))]))
+
+(: list-fold-back (All (T U) (-> (-> U T U) U (Listof T) U)))
+(define (list-fold-back folder state source)
+  (define reverse-source (reverse source))
+  (list-fold folder state reverse-source))
+
+(: list-fold-back-two (All (T U V) (-> (-> U T V U) U (Listof T) (Listof V) U)))
+(define (list-fold-back-two folder state list-one list-two)
+  (define list-one-reverse (reverse list-one))
+  (define list-two-reverse (reverse list-two))
+
+  (cond
+    [(and (null? list-one-reverse) (null? list-two-reverse)) state]
+    [(and (null? (cdr list-one-reverse)) (not (null? (cdr list-two-reverse))))
+     (list-fold-two folder (folder state (car list-one-reverse) (car list-two-reverse)) list-one-reverse (cdr list-two-reverse))]
+    [(and (null? (cdr list-two-reverse)) (not (null? (cdr list-one-reverse))))
+     (list-fold-two folder (folder state (car list-one-reverse) (car list-two-reverse)) (cdr list-one-reverse) list-two-reverse)]
+    [else
+     (list-fold-two folder
+                    (folder state (car list-one-reverse) (car list-two-reverse))
+                    (cdr list-one-reverse)
+                    (cdr list-two-reverse))]))
+
+(: list-for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
+(define (list-for-all predicate source)
+  (if (> (length (list-filter predicate source)) 0)
+      #t
+      #f))
+
 (provide (all-defined-out))
 
 ;; Tests
@@ -164,6 +212,18 @@
                   '("one" "two")))
   (list-filter-test-pass)
 
+  (define (list-fold-two-test)
+    (define result
+      (list-fold-two
+       (lambda ([state : Integer] [item-one : Integer] [item-two : String])
+         (+ state item-one (string-length item-two)))
+       0
+       '(1 2 3)
+       '("one" "two" "three")))
+
+    (check-eq? result 17))
+  (list-fold-two-test)
+
   (check-equal? (list-append (list 1 2 3) (list 4 5 6)) (list 1 2 3 4 5 6))
 
   (check-eq? (list-average (list 0 0 1 4 5)) 2)
@@ -191,4 +251,17 @@
   (check-false (list-find-index (lambda ([item : String]) (equal? item "Test")) names))
 
   (check-eq? (list-find-index-back (lambda ([item : Integer]) (= item 3)) '(1 3 4 5)) 1)
-  (check-false (list-find-index-back (lambda ([item : String]) (equal? item "Tim")) names)))
+  (check-false (list-find-index-back (lambda ([item : String]) (equal? item "Tim")) names))
+
+  (check-eq? (list-fold (lambda ([state : Integer] [item : Integer]) (+ state item)) 0 '(1 2 3)) 6)
+
+  (check-equal?
+   (list-fold
+    (lambda ([state : String] [item : String]) (string-append state " " item))
+    ""
+    '("one" "two" "three"))
+   " one two three")
+
+  (check-equal? (list-fold-back (lambda ([state : Number] [item : Number]) (/ item state)) 2 '(256 4048 24)) 192/253)
+  (check-true (list-for-all (lambda ([item : Integer]) (= 1 item)) '(1 1 1 1)))
+  (check-false (list-for-all (lambda ([item : Integer]) (= 1 item)) '())))
