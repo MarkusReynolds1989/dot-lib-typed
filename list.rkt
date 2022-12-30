@@ -1,6 +1,8 @@
 ; A library that contains all the functions for working with lists.
 #lang typed/racket/base
 
+(require "types.rkt")
+
 (: list-all-pairs (All (T) (-> (Listof T) (Listof T) (Listof (List T T)))))
 (define (list-all-pairs list-one list-two)
   (cond
@@ -110,27 +112,22 @@
 
 (: list-find-index (All (T) (-> (-> T Boolean) (Listof T) (Option Integer))))
 (define (list-find-index predicate source)
-  (: loop (All (T) (-> Integer (-> T Boolean) (Listof T) (Option Integer))))
-  (define (loop index predicate source)
+  (let loop ([index 0] [predicate predicate] [source source])
     (cond
       [(null? source) #f]
       [(predicate (car source)) index]
-      [else (loop (+ index 1) predicate (cdr source))]))
-  (loop 0 predicate source))
+      [else (loop (+ index 1) predicate (cdr source))])))
 
 (: list-find-index-back (All (T) (-> (-> T Boolean) (Listof T) (Option Integer))))
 (define (list-find-index-back predicate source)
   (define reverse-source (reverse source))
   (define count (- (length source) 1))
 
-  (: loop (All (T) (-> Integer (-> T Boolean) (Listof T) (Option Integer))))
-  (define (loop index predicate source)
+  (let loop ([index count] [predicate predicate] [source reverse-source])
     (cond
       [(null? source) #f]
       [(predicate (car source)) index]
-      [else (loop (- index 1) predicate (cdr source))]))
-
-  (loop count predicate reverse-source))
+      [else (loop (- index 1) predicate (cdr source))])))
 
 (: list-fold (All (T U) (-> (-> U T U) U (Listof T) U)))
 (define (list-fold folder state source)
@@ -215,7 +212,7 @@
   (loop 0 count initializer))
 
 ; TODO: Build a splitter.
-(: list-insert (All (T) (-> Integer T (Listof T) (Listof T))))
+(: list-insert (All (T) (-> u32 T (Listof T) (Listof T))))
 (define (list-insert index value source)
   (raise "Not implemented."))
 
@@ -225,7 +222,12 @@
 (define (list-is-empty source)
   (null? source))
 
-(: list-item )
+(: list-item (All (T) (-> u32 (Listof T) T)))
+(define (list-item index source)
+  (let loop ([acc 0] [index index] [source source])
+    (cond
+      [(= acc index) (car source)]
+      [else (loop (+ 1 acc) index (cdr source))])))
 
 (provide (all-defined-out))
 
@@ -318,4 +320,6 @@
 
   (check-equal? (list-indexed '(1 2 3)) '((0 . 1) (1 . 2) (2 . 3)))
 
-  (check-equal? (list-init 4 (lambda ([item : Integer]) (+ item 5))) '(5 6 7 8)))
+  (check-equal? (list-init 4 (lambda ([item : Integer]) (+ item 5))) '(5 6 7 8))
+
+  (check-eq? (list-item 1 '(1 2 3 4)) 2))
