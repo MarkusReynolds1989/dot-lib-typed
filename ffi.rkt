@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+
+(define start (current-milliseconds))
 
 (require ffi/unsafe
          ffi/unsafe/define)
@@ -30,4 +32,4 @@
 
 items-list
 
-(free result)
+(print (- (current-milliseconds) start))
