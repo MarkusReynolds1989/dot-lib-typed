@@ -165,9 +165,15 @@
   (cond
     [(and (null? list-one-reverse) (null? list-two-reverse)) state]
     [(and (null? (cdr list-one-reverse)) (not (null? (cdr list-two-reverse))))
-     (list-fold-two folder (folder state (car list-one-reverse) (car list-two-reverse)) list-one-reverse (cdr list-two-reverse))]
+     (list-fold-two folder
+                    (folder state (car list-one-reverse) (car list-two-reverse))
+                    list-one-reverse
+                    (cdr list-two-reverse))]
     [(and (null? (cdr list-two-reverse)) (not (null? (cdr list-one-reverse))))
-     (list-fold-two folder (folder state (car list-one-reverse) (car list-two-reverse)) (cdr list-one-reverse) list-two-reverse)]
+     (list-fold-two folder
+                    (folder state (car list-one-reverse) (car list-two-reverse))
+                    (cdr list-one-reverse)
+                    list-two-reverse)]
     [else
      (list-fold-two folder
                     (folder state (car list-one-reverse) (car list-two-reverse))
@@ -176,9 +182,50 @@
 
 (: list-for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
 (define (list-for-all predicate source)
-  (if (> (length (list-filter predicate source)) 0)
-      #t
-      #f))
+  (if (> (length (list-filter predicate source)) 0) #t #f))
+
+(: list-for-all-two (All (T) (-> (-> T T Boolean) (Listof T) (Listof T) Boolean)))
+(define (list-for-all-two predicate list-one list-two)
+  (raise "Not implemented."))
+
+(: list-group-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pair Key T)))))
+(define (list-group-by projection source)
+  (raise "Not implemented."))
+
+(: list-head (All (T) (-> (Listof T) T)))
+(define (list-head source)
+  (car source))
+
+(: list-indexed (All (T) (-> (Listof T) (Listof (Pair Integer T)))))
+(define (list-indexed source)
+  (: loop (All (T) (-> Integer (Listof T) (Listof (Pair Integer T)))))
+  (define (loop index source)
+    (cond
+      [(null? source) '()]
+      [(append (list (cons index (car source))) (loop (+ 1 index) (cdr source)))]))
+  (loop 0 source))
+
+(: list-init (All (T) (-> Integer (-> Integer T) (Listof T))))
+(define (list-init count initializer)
+  (: loop (All (T) (-> Integer Integer (-> Integer T) (Listof T))))
+  (define (loop index count initializer)
+    (cond
+      [(= index count) '()]
+      [else (cons (initializer index) (loop (+ 1 index) count initializer))]))
+  (loop 0 count initializer))
+
+; TODO: Build a splitter.
+(: list-insert (All (T) (-> Integer T (Listof T) (Listof T))))
+(define (list-insert index value source)
+  (raise "Not implemented."))
+
+; list-insert-many-at
+
+(: list-is-empty (All (T) (-> (Listof T) Boolean)))
+(define (list-is-empty source)
+  (null? source))
+
+(: list-item )
 
 (provide (all-defined-out))
 
@@ -214,12 +261,11 @@
 
   (define (list-fold-two-test)
     (define result
-      (list-fold-two
-       (lambda ([state : Integer] [item-one : Integer] [item-two : String])
-         (+ state item-one (string-length item-two)))
-       0
-       '(1 2 3)
-       '("one" "two" "three")))
+      (list-fold-two (lambda ([state : Integer] [item-one : Integer] [item-two : String])
+                       (+ state item-one (string-length item-two)))
+                     0
+                     '(1 2 3)
+                     '("one" "two" "three")))
 
     (check-eq? result 17))
   (list-fold-two-test)
@@ -255,13 +301,21 @@
 
   (check-eq? (list-fold (lambda ([state : Integer] [item : Integer]) (+ state item)) 0 '(1 2 3)) 6)
 
-  (check-equal?
-   (list-fold
-    (lambda ([state : String] [item : String]) (string-append state " " item))
-    ""
-    '("one" "two" "three"))
-   " one two three")
+  (check-equal? (list-fold (lambda ([state : String] [item : String]) (string-append state " " item))
+                           ""
+                           '("one" "two" "three"))
+                " one two three")
 
-  (check-equal? (list-fold-back (lambda ([state : Number] [item : Number]) (/ item state)) 2 '(256 4048 24)) 192/253)
+  (check-equal?
+   (list-fold-back (lambda ([state : Number] [item : Number]) (/ item state)) 2 '(256 4048 24))
+   192/253)
   (check-true (list-for-all (lambda ([item : Integer]) (= 1 item)) '(1 1 1 1)))
-  (check-false (list-for-all (lambda ([item : Integer]) (= 1 item)) '())))
+  (check-false (list-for-all (lambda ([item : Integer]) (= 1 item)) '()))
+  ;(check-equal? (list-group-by (lambda ([item : Integer]) (modulo item 2)) '(1 2 3 4 5))
+  ;'((list 1 '(1 3 5)) (list 0 '(2 4))))
+
+  (check-eq? (list-head '(1 2 3 4)) 1)
+
+  (check-equal? (list-indexed '(1 2 3)) '((0 . 1) (1 . 2) (2 . 3)))
+
+  (check-equal? (list-init 4 (lambda ([item : Integer]) (+ item 5))) '(5 6 7 8)))
