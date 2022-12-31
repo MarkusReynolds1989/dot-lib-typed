@@ -1,4 +1,7 @@
 ; A library that contains all the functions for working with lists.
+; Instead of having "try" functions that produce option and regular functions that raise exceptions
+; I am defaulting to optional functions.
+
 #lang typed/racket/base
 
 (require "types.rkt")
@@ -189,27 +192,23 @@
 (define (list-group-by projection source)
   (raise "Not implemented."))
 
-(: list-head (All (T) (-> (Listof T) T)))
+(: list-head (All (T) (-> (Listof T) (Option T))))
 (define (list-head source)
-  (car source))
+  (if (null? source) #f (car source)))
 
 (: list-indexed (All (T) (-> (Listof T) (Listof (Pair Integer T)))))
 (define (list-indexed source)
-  (: loop (All (T) (-> Integer (Listof T) (Listof (Pair Integer T)))))
-  (define (loop index source)
+  (let loop ([index 0] [source source])
     (cond
       [(null? source) '()]
-      [(append (list (cons index (car source))) (loop (+ 1 index) (cdr source)))]))
-  (loop 0 source))
+      [(append (list (cons index (car source))) (loop (+ 1 index) (cdr source)))])))
 
 (: list-init (All (T) (-> Integer (-> Integer T) (Listof T))))
 (define (list-init count initializer)
-  (: loop (All (T) (-> Integer Integer (-> Integer T) (Listof T))))
-  (define (loop index count initializer)
+  (let loop ([index 0] [count count] [initializer initializer])
     (cond
       [(= index count) '()]
-      [else (cons (initializer index) (loop (+ 1 index) count initializer))]))
-  (loop 0 count initializer))
+      [else (cons (initializer index) (loop (+ 1 index) count initializer))])))
 
 ; TODO: Build a splitter.
 (: list-insert (All (T) (-> u32 T (Listof T) (Listof T))))
@@ -222,12 +221,182 @@
 (define (list-is-empty source)
   (null? source))
 
-(: list-item (All (T) (-> u32 (Listof T) T)))
+(: list-item (All (T) (-> Integer (Listof T) (Option T))))
 (define (list-item index source)
   (let loop ([acc 0] [index index] [source source])
     (cond
+      [(null? source) #f]
       [(= acc index) (car source)]
       [else (loop (+ 1 acc) index (cdr source))])))
+
+; TODO: Hijack stdout to test this.
+(: list-iter (All (T) (-> (-> T Void) (Listof T) Void)))
+(define (list-iter action source)
+  (cond
+    [(null? source) (void)]
+    [else
+     (action (car source))
+     (list-iter action (cdr source))]))
+
+; TODO: Finish all cases and test.
+(: list-iter-two (All (T U) (-> (-> T U Void) (Listof T) (Listof U) Void)))
+(define (list-iter-two action list-one list-two)
+  (cond
+    [(and (null? list-one) (null? list-two)) (void)]
+    [(and (null? (cdr list-two)) (not (null? (cdr list-one))))
+     (action (car list-one) (car list-two))
+     (list-iter-two action (cdr list-one) list-two)]))
+
+(: list-iter-index (All (T) (-> (-> Integer T Void) (Listof T) Void)))
+(define (list-iter-index action source)
+  (let loop ([index 0] [action action] [source source])
+    (cond
+      [(null? source) (void)]
+      [else
+       (action index (car source))
+       (loop (+ 1 index) action (cdr source))])))
+
+(: list-iter-index-two (All (T U) (-> (-> Integer T U Void) (Listof T) (Listof U) Void)))
+(define (list-iter-index-two action list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (raise "Arguments must be the same length to list-iter-index-two."))
+  (let loop ([index 0] [action action] [list-one list-one] [list-two list-two])
+    (cond
+      [(null? list-one) (void)]
+      [else
+       (action index (car list-one) (car list-two))
+       (loop (+ 1 index) action (cdr list-one) (cdr list-two))])))
+
+(: list-last (All (T) (-> (Listof T) (Option T))))
+(define (list-last source)
+  (if (null? source) #f (list-item (- (length source) 1) source)))
+
+(: list-length (All (T) (-> (Listof T) Integer)))
+(define (list-length source)
+  (length source))
+
+(: list-map (All (T U) (-> (-> T U) (Listof T) (Listof U))))
+(define (list-map mapping source)
+  (cond
+    [(null? source) '()]
+    [else (cons (mapping (car source)) (list-map mapping (cdr source)))]))
+
+; TODO: list-map-two
+; TODO: list-map-three
+; TODO: list-map-fold - returns the list and accumulated value as a pair.
+; TODO: list-map-fold-back - same as above but with a reversed list.
+
+(: list-map-index (All (T U) (-> (-> Integer T U) (Listof T) (Listof U))))
+(define (list-map-index mapping source)
+  (let loop ([index 0] [mapping mapping] [source source])
+    (cond
+      [(null? source) '()]
+      [else (cons (mapping index (car source)) (loop (+ 1 index) mapping (cdr source)))])))
+
+; TODO: list-map-index-two - Lists same length.
+
+(: list-max (-> (Listof Real) Real))
+(define (list-max source)
+  (: loop (-> Real (Listof Real) Real))
+  (define (loop max-num source)
+    (cond
+      [(null? source) max-num]
+      [(< max-num (car source)) (loop (car source) (cdr source))]
+      [else (loop max-num (cdr source))]))
+  (loop -320000 source))
+
+; TODO: list-max-by
+; TODO: list-min
+; TODO: list-min-by
+
+(: list-of-array (All (T) (-> (Vectorof T) (Listof T))))
+(define (list-of-array array)
+  (let loop ([index 0] [array array])
+    (cond
+      [(= index (vector-length array)) '()]
+      [else (cons (vector-ref array index) (loop (+ index 1) array))])))
+
+; TODO: list-of-seq
+; TODO: list-pairwise
+; TODO: list-partition - filter but keep true and false. (Pair (Listof T) (Listof T))
+; TODO: list-permute - I have no idea how this works. Will have to see the source.
+
+; TODO: Fix (: list-pick (All (T U) (-> (-> T (Option U)) (Listof T) (Option U))))
+
+; TODO: list-remove-at
+
+(: list-split-at (All (T) (-> Integer (Listof T) (List (Listof T) (Listof T)))))
+(define (list-split-at index source)
+  (list (list-take index source) (list-skip index source)))
+
+(: list-skip (All (T) (-> Integer (Listof T) (Listof T))))
+(define (list-skip count source)
+  (when (> count (list-length source))
+    (raise "Index is greater than the bounds of the list."))
+  (let loop ([index 0] [count count] [source source])
+    (cond
+      [(null? source) '()]
+      [(< index count) (loop (+ 1 index) count (cdr source))]
+      [else (cons (car source) (loop (+ 1 index) count (cdr source)))])))
+
+; (: list-split-into) Don't know how to determine how big each chunk should be.
+
+(: list-sum (-> (Listof Number) Number))
+(define (list-sum source)
+  (list-fold (lambda ([acc : Number] [item : Number]) (+ acc item)) 0 source))
+
+; list-sum-by
+
+(: list-tail (All (T) (-> (Listof T) (Listof T))))
+(define (list-tail source)
+  (cdr source))
+
+(: list-take (All (T) (-> Integer (Listof T) (Listof T))))
+(define (list-take count source)
+  (when (> count (list-length source))
+    (raise "Index is greater than the bounds of the list."))
+  (let loop ([index 0] [count count] [source source])
+    (cond
+      [(= index count) '()]
+      [else (cons (car source) (loop (+ 1 index) count (cdr source)))])))
+
+(: list-take-while (All (T) (-> (-> T Boolean) (Listof T) (Listof T))))
+(define (list-take-while predicate source)
+  (cond
+    [(null? source) '()]
+    [(not (predicate (car source))) '()]
+    [else (cons (car source) (list-take-while predicate (cdr source)))]))
+
+; TODO: Change this to my own implementation.
+(: list->array (All (T) (-> (Listof T) (Vectorof T))))
+(define (list->array source)
+  (list->vector source))
+
+; TODO: list->seq
+
+; TODO: list->transpose
+
+; TODO: list->truncate
+
+; TODO: list-unfold, no idea how to implement
+
+; TODO: list-unzip
+
+; TODO: list-unzip-threeple
+
+(: list-update-at (All (T) (-> u32 T (Listof T) (Listof T))))
+(define (list-update-at index value source)
+  (let loop ([current 0] [index index] [value value] [source source])
+    (cond
+      [(null? source) '()]
+      [(= current index) (cons value (loop (+ 1 current) index value (cdr source)))]
+      [else (cons (car source) (loop (+ 1 current) index value (cdr source)))])))
+
+; TODO: list-windowed
+
+; TODO: list-zip - must be equal
+
+; TODO: list-zip-three
 
 (provide (all-defined-out))
 
@@ -322,4 +491,29 @@
 
   (check-equal? (list-init 4 (lambda ([item : Integer]) (+ item 5))) '(5 6 7 8))
 
-  (check-eq? (list-item 1 '(1 2 3 4)) 2))
+  (check-eq? (list-item 1 '(1 2 3 4)) 2)
+  (check-false (list-item 1 '()))
+  (check-false (list-last '()))
+
+  (check-eq? (list-last '(1 2 3 4 25 100)) 100)
+
+  (check-eq? (list-length '(1 2 3 4)) 4)
+
+  (check-equal? (list-map (lambda ([item : Integer]) (+ item 2)) '(1 2 3 4)) '(3 4 5 6))
+
+  (check-equal?
+   (list-map-index (lambda ([index : Integer] [item : Integer]) (+ index item)) '(1 2 3 4))
+   '(1 3 5 7))
+
+  (check-eq? (list-max '(1 2 3 4)) 4)
+  (check-eq? (list-max '(100.35 .33 .25 10.99)) 100.35)
+  (check-equal? (list-of-array #(1 2 3 4)) '(1 2 3 4))
+  (check-equal? (list-skip 1 '(1 2 3 4)) '(2 3 4))
+  (check-equal? (list-take 2 '(1 2 3 4)) '(1 2))
+  (check-equal? (list-split-at 3 '(8 4 3 1 6 1)) (list (list 8 4 3) (list 1 6 1)))
+  (check-equal? (list-split-at 2 '(1 2 3 4 5)) (list (list 1 2) (list 3 4 5)))
+  (check-eq? (list-sum '(1 2 3 4)) 10)
+  (check-equal? (list-sum '(1.0 2.0 3.4 4.0)) 10.4)
+  (check-equal? (list-take-while (lambda ([item : u32]) (not (= item 4))) '(1 2 3 4 5 6 7)) '(1 2 3))
+  (check-equal? (list->array '(1 2 3 4)) #(1 2 3 4))
+  (check-equal? (list-update-at 1 3 '(1 2 3 4)) '(1 3 3 4)))
