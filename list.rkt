@@ -19,7 +19,7 @@
 
 (: list-average (-> (Listof Number) Number))
 (define (list-average source)
-  (/ (apply + source) (length source)))
+  (/ (apply + source) (list-length source)))
 
 (: list-average-by (All (T) (-> (-> T Number) (Listof T) Number)))
 (define (list-average-by projection source)
@@ -42,6 +42,7 @@
   ;;; TODO: Implement a compare function.
   (raise "Not implemented"))
 
+; TODO: Fix, should be seq not list.
 (: list-concat (All (T) (-> (Sequenceof (Listof T)) (Listof T))))
 (define (list-concat lists)
   (raise "Not implemented"))
@@ -124,7 +125,7 @@
 (: list-find-index-back (All (T) (-> (-> T Boolean) (Listof T) (Option Integer))))
 (define (list-find-index-back predicate source)
   (define reverse-source (reverse source))
-  (define count (- (length source) 1))
+  (define count (- (list-length source) 1))
 
   (let loop ([index count] [predicate predicate] [source reverse-source])
     (cond
@@ -182,7 +183,7 @@
 
 (: list-for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
 (define (list-for-all predicate source)
-  (if (> (length (list-filter predicate source)) 0) #t #f))
+  (if (> (list-length (list-filter predicate source)) 0) #t #f))
 
 (: list-for-all-two (All (T) (-> (-> T T Boolean) (Listof T) (Listof T) Boolean)))
 (define (list-for-all-two predicate list-one list-two)
@@ -215,10 +216,10 @@
 (define (list-insert index value source)
   (raise "Not implemented."))
 
-; list-insert-many-at
+; TODO: list-insert-many-at
 
-(: list-is-empty (All (T) (-> (Listof T) Boolean)))
-(define (list-is-empty source)
+(: list-is-empty? (All (T) (-> (Listof T) Boolean)))
+(define (list-is-empty? source)
   (null? source))
 
 (: list-item (All (T) (-> Integer (Listof T) (Option T))))
@@ -258,7 +259,7 @@
 
 (: list-iter-index-two (All (T U) (-> (-> Integer T U Void) (Listof T) (Listof U) Void)))
 (define (list-iter-index-two action list-one list-two)
-  (when (not (= (length list-one) (length list-two)))
+  (when (not (= (list-length list-one) (list-length list-two)))
     (raise "Arguments must be the same length to list-iter-index-two."))
   (let loop ([index 0] [action action] [list-one list-one] [list-two list-two])
     (cond
@@ -269,11 +270,11 @@
 
 (: list-last (All (T) (-> (Listof T) (Option T))))
 (define (list-last source)
-  (if (null? source) #f (list-item (- (length source) 1) source)))
+  (if (null? source) #f (list-item (- (list-length source) 1) source)))
 
 (: list-length (All (T) (-> (Listof T) Integer)))
 (define (list-length source)
-  (length source))
+  (if (null? source) 0 (+ 1 (list-length (cdr source)))))
 
 (: list-map (All (T U) (-> (-> T U) (Listof T) (Listof U))))
 (define (list-map mapping source)
