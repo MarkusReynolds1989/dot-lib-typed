@@ -296,15 +296,12 @@
 
 ; TODO: list-map-index-two - Lists same length.
 
+; TODO: Come back to fix the wonky type checking.
 (: list-max (-> (Listof Real) Real))
 (define (list-max source)
-  (: loop (-> Real (Listof Real) Real))
-  (define (loop max-num source)
-    (cond
-      [(null? source) max-num]
-      [(< max-num (car source)) (loop (car source) (cdr source))]
-      [else (loop max-num (cdr source))]))
-  (loop -320000 source))
+  (list-fold (lambda ([max-num : Real] [item : Real]) (if (< max-num item) item max-num))
+             -320000
+             source))
 
 ; TODO: list-max-by
 ; TODO: list-min
