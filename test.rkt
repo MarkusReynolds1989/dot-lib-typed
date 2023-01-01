@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require racket/file
+         threading
          "list.rkt")
 
 (define test-data
@@ -15,13 +16,14 @@
   (if (equal? value #f) default value))
 
 (: manage-calories
-   (-> (List (Listof Number) (Listof Number)) String (List (Listof Number) (Listof Number))))
+   (-> (Tuple (Listof Number) (Listof Number)) String (Tuple (Listof Number) (Listof Number))))
 (define (manage-calories acc index)
   (if (<= (string-length index) 0)
-      (list (list) (cons (list-sum (car acc)) (car (cdr acc))))
+      (list (list-empty) (cons (list-sum (car acc)) (car (cdr acc))))
       (list (cons (unwrap-or 0 (string->number index)) (car acc)) (car (cdr acc)))))
 
-(list-max (list-map (lambda ([item : Number]) (cast item Real))
-                    (car (cdr (list-fold manage-calories (list (list) (list)) lines)))))
+(~> (car (cdr (list-fold manage-calories (list (list) (list)) lines)))
+    (list-map (lambda ([item : Number]) (cast item Real)) _)
+    (list-max))
 
 ;(car (cdr (list-fold manage-calories (list (list) (list)) lines)))
