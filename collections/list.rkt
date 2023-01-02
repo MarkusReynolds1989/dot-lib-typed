@@ -4,7 +4,7 @@
 
 #lang typed/racket/base
 
-(require "../types.rkt")
+(require "../utils/types.rkt")
 
 (: list-all-pairs (All (T) (-> (Listof T) (Listof T) (Listof (List T T)))))
 (define (list-all-pairs list-one list-two)
