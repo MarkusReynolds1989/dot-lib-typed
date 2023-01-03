@@ -125,6 +125,13 @@
 
 ;(: array-indexed (All (T) (-> (Vectorof (List Integer T)))))
 
+(: array-map (All (T U) (-> (-> T U) (Vectorof T) (Vectorof U))))
+(define (array-map mapper array)
+  (for/vector :
+    (Vectorof U)
+    ([item array])
+    (mapper item)))
+
 (module+ test
   (require typed/rackunit)
   (define old-array (vector 1 2 3 4))
@@ -153,4 +160,8 @@
 
   (check-true (array-for-all (lambda ([item : Integer]) (> item 2)) (vector 3 4 5 6 7)))
   (check-false (array-for-all (lambda ([item : Integer]) (> item 2)) (vector 1 2 3 4 5)))
-  (check-eq? (array-get 0 (vector 1 2 3 4)) 1))
+  (check-eq? (array-get 0 (vector 1 2 3 4)) 1)
+  (check-equal? (array-map (lambda ([item : Integer]) (+ 1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
+  (check-equal?
+   (array-map (lambda ([item : String]) (string-length item)) (vector "one" "two" "three"))
+   (vector 3 3 5)))
