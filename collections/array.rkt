@@ -1,11 +1,11 @@
-#lang typed/racket/base/deep
+#lang typed/racket/base/shallow
 
 ; TODO: array-all-pairs
 
 (: array-append (All (T) (-> (Vectorof T) (Vectorof T) (Vectorof T))))
 (define (array-append array-one array-two)
   (let ([new-array (make-vector (+ (vector-length array-one) (vector-length array-two))
-                                (vector-ref array-one 1))])
+                                (array-get 0 array-one))])
     (vector-copy! new-array 0 array-one 0 (vector-length array-one))
     (vector-copy! new-array (vector-length array-one) array-two 0 (vector-length array-two))
     new-array))
@@ -35,15 +35,15 @@
          :
          Boolean
          #f])
-    (for ([i (in-range 0 (vector-length array))])
-      (when (equal? value (vector-ref array i))
+    (for ([index (in-range 0 (vector-length array))])
+      (when (equal? value (array-get index array))
         (set! result #t)))
     result))
 
 (: array-copy (All (T) (-> (Vectorof T) (Vectorof T))))
 (define (array-copy array)
   (: new-array (Vectorof T))
-  (define new-array (array-create (vector-length array) (vector-ref array 0)))
+  (define new-array (array-create (vector-length array) (array-get 0 array)))
   (vector-copy! new-array 0 array 0 (vector-length array))
 
   new-array)
@@ -65,7 +65,7 @@
 
 (: array-exactly-one (All (T) (-> (Vectorof T) (Option T))))
 (define (array-exactly-one array)
-  (if (= (vector-length array) 1) (vector-ref array 0) #f))
+  (if (= (vector-length array) 1) (array-get 0 array) #f))
 
 ; TODO: array-except
 
@@ -74,7 +74,7 @@
   (: result Boolean)
   (define result #f)
   (for ([i (in-range 0 (vector-length array))])
-    (when (predicate (vector-ref array i))
+    (when (predicate (array-get i array))
       (set! result #t)))
 
   result)
@@ -87,7 +87,7 @@
 (define (array-filter predicate array)
   (array-fold (lambda ([acc : (Vectorof T)] [item : T])
                 (if (predicate item) (array-append (vector item) acc) acc))
-              (array-create (vector-length array) (vector-ref array 0))
+              (array-create 0 (array-get 0 array))
               array))
 
 (: array-fold (All (T V) (-> (-> V T V) V (Vectorof T) V)))
@@ -95,7 +95,35 @@
   (let loop ([index 0] [folder folder] [state state] [array array])
     (cond
       [(= index (vector-length array)) state]
-      [else (loop (+ 1 index) folder (folder state (vector-ref array index)) array)])))
+      [else (loop (+ 1 index) folder (folder state (array-get index array)) array)])))
+
+; TODO: array-fold-two
+
+; TODO: array-fold-back
+
+; TODO: array-fold-back-two
+
+(: array-for-all (All (T) (-> (-> T Boolean) (Vectorof T) Boolean)))
+(define (array-for-all predicate array)
+  (let loop ([index 0] [predicate predicate] [array array])
+    (cond
+      [(= index (vector-length array)) #t]
+      [(not (predicate (array-get index array))) #f]
+      [else (loop (+ index 1) predicate array)])))
+
+; TODO: array-for-all-two
+
+(: array-get (All (T) (-> Integer (Vectorof T) T)))
+(define (array-get index array)
+  (vector-ref array index))
+
+; TODO: array-group-by
+
+(: array-head (All (T) (-> (Vectorof T) T)))
+(define (array-head array)
+  (array-get 0 array))
+
+;(: array-indexed (All (T) (-> (Vectorof (List Integer T)))))
 
 (module+ test
   (require typed/rackunit)
@@ -116,6 +144,13 @@
   (check-eq? (array-fold (lambda ([acc : Integer] [item : Integer]) (+ acc item)) 0 (vector 1 2 3 4))
              10)
 
-  (check-equal?
-   (array-filter (lambda ([item : String]) (> (string-length item) 3)) (vector "one" "two" "three"))
-   (vector "three")))
+  (check-equal? (array-filter (lambda ([item : Integer]) (= item 1)) (vector 1 1 1 2 2 2))
+                (vector 1 1 1))
+
+  (check-equal? (array-filter (lambda ([item : String]) (> (string-length item) 3))
+                              (vector "one" "two" "three"))
+                (vector "three"))
+
+  (check-true (array-for-all (lambda ([item : Integer]) (> item 2)) (vector 3 4 5 6 7)))
+  (check-false (array-for-all (lambda ([item : Integer]) (> item 2)) (vector 1 2 3 4 5)))
+  (check-eq? (array-get 0 (vector 1 2 3 4)) 1))

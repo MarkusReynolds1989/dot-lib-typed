@@ -2,7 +2,7 @@
 ; Instead of having "try" functions that produce option and regular functions that raise exceptions
 ; I am defaulting to optional functions.
 
-#lang typed/racket/base
+#lang typed/racket/base/deep
 
 (require "../utils/types.rkt")
 
