@@ -4,10 +4,10 @@
 
 (: array-append (All (T) (-> (Vectorof T) (Vectorof T) (Vectorof T))))
 (define (array-append array-one array-two)
-  (let ([new-array (make-vector (+ (vector-length array-one) (vector-length array-two))
+  (let ([new-array (make-vector (+ (array-length array-one) (vector-length array-two))
                                 (array-get 0 array-one))])
-    (vector-copy! new-array 0 array-one 0 (vector-length array-one))
-    (vector-copy! new-array (vector-length array-one) array-two 0 (vector-length array-two))
+    (vector-copy! new-array 0 array-one 0 (array-length array-one))
+    (vector-copy! new-array (array-length array-one) array-two 0 (vector-length array-two))
     new-array))
 
 ; Come back after sum.
@@ -35,7 +35,7 @@
          :
          Boolean
          #f])
-    (for ([index (in-range 0 (vector-length array))])
+    (for ([index (in-range 0 (array-length array))])
       (when (equal? value (array-get index array))
         (set! result #t)))
     result))
@@ -43,8 +43,8 @@
 (: array-copy (All (T) (-> (Vectorof T) (Vectorof T))))
 (define (array-copy array)
   (: new-array (Vectorof T))
-  (define new-array (array-create (vector-length array) (array-get 0 array)))
-  (vector-copy! new-array 0 array 0 (vector-length array))
+  (define new-array (array-create (array-length array) (array-get 0 array)))
+  (vector-copy! new-array 0 array 0 (array-length array))
 
   new-array)
 
@@ -65,7 +65,7 @@
 
 (: array-exactly-one (All (T) (-> (Vectorof T) (Option T))))
 (define (array-exactly-one array)
-  (if (= (vector-length array) 1) (array-get 0 array) #f))
+  (if (= (array-length array) 1) (array-get 0 array) #f))
 
 ; TODO: array-except
 
@@ -73,7 +73,7 @@
 (define (array-exists predicate array)
   (: result Boolean)
   (define result #f)
-  (for ([i (in-range 0 (vector-length array))])
+  (for ([i (in-range 0 (array-length array))])
     (when (predicate (array-get i array))
       (set! result #t)))
 
@@ -94,7 +94,7 @@
 (define (array-fold folder state array)
   (let loop ([index 0] [folder folder] [state state] [array array])
     (cond
-      [(= index (vector-length array)) state]
+      [(= index (array-length array)) state]
       [else (loop (+ 1 index) folder (folder state (array-get index array)) array)])))
 
 ; TODO: array-fold-two
@@ -107,7 +107,7 @@
 (define (array-for-all predicate array)
   (let loop ([index 0] [predicate predicate] [array array])
     (cond
-      [(= index (vector-length array)) #t]
+      [(= index (array-length array)) #t]
       [(not (predicate (array-get index array))) #f]
       [else (loop (+ index 1) predicate array)])))
 
@@ -125,12 +125,64 @@
 
 ;(: array-indexed (All (T) (-> (Vectorof (List Integer T)))))
 
-(: array-map (All (T U) (-> (-> T U) (Vectorof T) (Vectorof U))))
+(: array-init (All (T) (-> Integer (-> Integer T) (Vectorof T))))
+(define (array-init count initializer)
+  (for/vector :
+    (Vectorof T)
+    ([index (in-range 0 count)])
+    (initializer index)))
+
+; TODO: array-insert-at
+
+; TODO: array-insert-many-at
+
+; TODO: array-is-empty?
+(: array-is-empty? (All (T) (-> (Vectorof T) Boolean)))
+(define (array-is-empty? array)
+  (= (array-length array) 0))
+
+; TODO: array-item is the same as array-get, may not do it.
+
+(: array-iter (All (T) (-> (-> T Void) (Vectorof T) Void)))
+(define (array-iter action array)
+  (for ([index (in-range 0 (array-length array))])
+    (action (array-get index array))))
+
+(: array-iter-two (All (T V) (-> (-> T V Void) (Vectorof T) (Vectorof V) Void)))
+(define (array-iter-two action array-one array-two)
+  (for ([index (in-range 0 (array-length array-one))])
+    (action (array-get index array-one) (array-get index array-two))))
+
+(: array-iter-index (All (T) (-> (-> Integer T Void) (Vectorof T) Void)))
+(define (array-iter-index action array)
+  (for ([index (in-range 0 (array-length array))])
+    (action index (array-get index array))))
+
+(: array-iter-index-two (All (T V) (-> (-> Integer T V Void) (Vectorof T) (Vectorof V) Void)))
+(define (array-iter-index-two action array-one array-two)
+  (for ([index (in-range 0 (array-length array-one))])
+    (action index (array-get index array-one) (array-get index array-two))))
+
+(: array-last (All (T) (-> (Vectorof T) T)))
+(define (array-last array)
+  (array-get (- (array-length array) 1) array))
+
+(: array-length (All (T) (-> (Vectorof T) Integer)))
+(define (array-length array)
+  (vector-length array))
+
+(: array-map (All (T V) (-> (-> T V) (Vectorof T) (Vectorof V))))
 (define (array-map mapper array)
   (for/vector :
-    (Vectorof U)
+    (Vectorof V)
     ([item array])
     (mapper item)))
+
+(:)
+
+(: array-sum (-> (Vectorof Number) Number))
+(define (array-sum array)
+  (array-fold (lambda ([acc : Number] [item : Number]) (+ acc item)) 0 array))
 
 (module+ test
   (require typed/rackunit)
@@ -162,6 +214,13 @@
   (check-false (array-for-all (lambda ([item : Integer]) (> item 2)) (vector 1 2 3 4 5)))
   (check-eq? (array-get 0 (vector 1 2 3 4)) 1)
   (check-equal? (array-map (lambda ([item : Integer]) (+ 1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
-  (check-equal?
-   (array-map (lambda ([item : String]) (string-length item)) (vector "one" "two" "three"))
-   (vector 3 3 5)))
+  (check-equal? (array-map (lambda ([item : String]) (string-length item))
+                           (vector "one" "two" "three"))
+                (vector 3 3 5))
+
+  (check-equal? (array-init 3 (lambda ([item : Number]) (+ item 1))) (vector 1 2 3))
+
+  (check-true (array-is-empty? (vector)))
+  (check-false (array-is-empty? (vector 1)))
+
+  (check-eq? (array-last (vector 1 2 3 4)) 4))
