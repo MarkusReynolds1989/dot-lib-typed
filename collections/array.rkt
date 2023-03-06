@@ -161,25 +161,20 @@
   (check-false (array-exactly-one (vector 1 2)))
   (check-eq? (array-exactly-one (vector 1)) 1)
   (check-true (array-exists (lambda (item) (= item 1)) (vector 1 2 3 4)))
-  (check-false (array-exists (lambda (item) (equal? item "blue"))
-                             (vector "red" "yellow" "green")))
+  (check-false (array-exists (lambda (item) (equal? item "blue")) (vector "red" "yellow" "green")))
 
-  (check-eq? (array-fold (lambda (acc item) (+ acc item)) 0 (vector 1 2 3 4))
-             10)
+  (check-eq? (array-fold (lambda (acc item) (+ acc item)) 0 (vector 1 2 3 4)) 10)
 
-  (check-equal? (array-filter (lambda (item) (= item 1)) (vector 1 1 1 2 2 2))
-                (vector 1 1 1))
+  (check-equal? (array-filter (lambda (item) (= item 1)) (vector 1 1 1 2 2 2)) (vector 1 1 1))
 
-  (check-equal? (array-filter (lambda (item) (> (string-length item) 3))
-                              (vector "one" "two" "three"))
+  (check-equal? (array-filter (lambda (item) (> (string-length item) 3)) (vector "one" "two" "three"))
                 (vector "three"))
 
   (check-true (array-for-all (lambda (item) (> item 2)) (vector 3 4 5 6 7)))
   (check-false (array-for-all (lambda (item) (> item 2)) (vector 1 2 3 4 5)))
   (check-eq? (array-get 0 (vector 1 2 3 4)) 1)
   (check-equal? (array-map (lambda (item) (+ 1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
-  (check-equal? (array-map (lambda (item) (string-length item))
-                           (vector "one" "two" "three"))
+  (check-equal? (array-map (lambda (item) (string-length item)) (vector "one" "two" "three"))
                 (vector 3 3 5))
 
   (check-equal? (array-init 3 (lambda (item) (+ item 1))) (vector 1 2 3))
