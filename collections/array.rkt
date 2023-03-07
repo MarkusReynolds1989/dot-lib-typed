@@ -41,6 +41,9 @@
 
   new-array)
 
+(define (array-copy-to in-array out-array)
+  (vector-copy! out-array 0 in-array 0 (array-length out-array)))
+
 ; TODO: array-count-by
 
 ; TODO: array-create
@@ -147,6 +150,8 @@
 
 (define (array-sum array)
   (array-fold (lambda (acc item) (+ acc item)) 0 array))
+
+(provide (all-defined-out))
 
 (module+ test
   (require typed/rackunit)
