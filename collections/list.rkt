@@ -321,6 +321,18 @@
 
 ; TODO: list-unzip-threeple
 
+(define (list-sort source)
+  (sort source <))
+
+(define (list-sort-by projection source)
+  (sort source < #:key projection))
+
+(define (list-sort-by-descending projection source)
+  (sort source > #:key projection))
+
+(define (list-sort-descending source)
+  (sort source >))
+
 (define (list-update-at index value source)
   (let loop ([current 0] [index index] [value value] [source source])
     (cond
@@ -438,4 +450,12 @@
   (check-equal? (list-sum '(1.0 2.0 3.4 4.0)) 10.4)
   (check-equal? (list-take-while (lambda (item) (not (= item 4))) '(1 2 3 4 5 6 7)) '(1 2 3))
   (check-equal? (list->array '(1 2 3 4)) #(1 2 3 4))
-  (check-equal? (list-update-at 1 3 '(1 2 3 4)) '(1 3 3 4)))
+  (check-equal? (list-update-at 1 3 '(1 2 3 4)) '(1 3 3 4))
+
+  (check-equal? (list-sort '(4 2 3 1)) '(1 2 3 4))
+  (check-equal? (list-sort-descending '(4 2 3 1)) '(4 3 2 1))
+
+  (define unordered-pairs (list (list 4 "four") (list 2 "two") (list 3 "three")))
+
+  (check-equal? (list-sort-by (lambda (x) (car x)) unordered-pairs) (list (list 2 "two") (list 3 "three") (list 4 "four")))
+  (check-equal? (list-sort-by-descending (lambda (x) (car x)) unordered-pairs) (list (list 4 "four") (list 3 "three") (list 2 "two"))))
