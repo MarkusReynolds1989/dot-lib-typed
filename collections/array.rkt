@@ -58,7 +58,7 @@
   (vector))
 
 (define (array-exactly-one array)
-  (if (= (array-length array) 1) (array-get 0 array) #f))
+  (and (= (array-length array) 1) (array-get 0 array) #f))
 
 ; TODO: array-except
 
@@ -178,11 +178,11 @@
   (check-true (array-for-all (lambda (item) (> item 2)) (vector 3 4 5 6 7)))
   (check-false (array-for-all (lambda (item) (> item 2)) (vector 1 2 3 4 5)))
   (check-eq? (array-get 0 (vector 1 2 3 4)) 1)
-  (check-equal? (array-map (lambda (item) (+ 1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
+  (check-equal? (array-map (lambda (item) (add1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
   (check-equal? (array-map (lambda (item) (string-length item)) (vector "one" "two" "three"))
                 (vector 3 3 5))
 
-  (check-equal? (array-init 3 (lambda (item) (+ item 1))) (vector 1 2 3))
+  (check-equal? (array-init 3 (lambda (item) (add1 item))) (vector 1 2 3))
 
   (check-true (array-is-empty? (vector)))
   (check-false (array-is-empty? (vector 1)))

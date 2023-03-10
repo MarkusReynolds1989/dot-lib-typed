@@ -32,6 +32,8 @@
   (set-resize-array-index! index)
   (vector-set! resize-array index item))
 
+(provide make-resize-array resize-array-add)
+
 (module+ test
   (define people (make-resize-array))
   (check-equal? (resize-array-array people) (array-create 256 '())))
