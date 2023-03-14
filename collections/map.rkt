@@ -20,8 +20,11 @@
 (define (Map-map mapping table)
   (hash-map/copy table mapping))
 
-(define (Map-fold folder table)
-  0)
+(define (Map-fold folder state table)
+  (let loop ([index 0] [folder folder] [state state] [table table])
+    (cond
+      [(= index (Map-count table)) state]
+      [#t (loop (add1 index) folder (folder state (hash-iterate-pair table index)) table)])))
 
 (define (Map-exists predicate table)
   0)
@@ -30,7 +33,7 @@
   (hash-map table (lambda (key value) (list key value))))
 
 (define (Map->array table)
-  (list->array (hash-map table (lambda (key value) (list key value)))))
+  (List->array (hash-map table (lambda (key value) (list key value)))))
 
 (define (Map-filter filter table)
   0)
@@ -41,6 +44,7 @@
 (module+ test
   (require rackunit)
   (define table (hash 1 "one"))
+  (define add-table (hash "one" 1 "two" 2 "three" 3))
   (check-equal? (Map-add 2 "two" table) (hash 1 "one" 2 "two"))
   (check-equal? (Map-change 1 (lambda (_) "three") table) (hash 1 "three"))
   (check-true (Map-contains-key 1 table))
@@ -48,4 +52,5 @@
   (check-equal? (Map-empty) (hash))
   (check-equal? (Map->list table) (list (list 1 "one")))
   (check-equal? (Map->array table) (vector (list 1 "one")))
-  (check-equal? (Map-map (lambda (key value) (values (add1 key) value)) table) (hash 2 "one")))
+  (check-equal? (Map-map (lambda (key value) (values (add1 key) value)) table) (hash 2 "one"))
+  (check-equal? (Map-fold (lambda (acc pair) (+ (cdr pair) acc)) 0 add-table) 6))
