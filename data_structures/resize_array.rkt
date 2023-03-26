@@ -7,33 +7,45 @@
 ; Index is the current index we are on, inc to add a new item.
 ; Size is how many total the array can hold.
 ; Count is how many items are actually in the array.
-(struct resize-array (array index size count) #:mutable)
+(struct Resize-array (array index size count) #:mutable)
 
-(define (make-resize-array [size 256])
-  (resize-array (Array-create size '()) -1 size 0))
+(define (Resize-array-new [size 256])
+  (Resize-array (Array-create size '()) -1 size 0))
+
+(define (Resize-array-get index input)
+  (Array-get index (Resize-array-array input)))
 
 ; Create a new array of size: size * 2.
 ; Copy all the items from the first array into the new one.
 ; Mutates resize-array so it takes the new size and the new array.
-(define (grow resize-array)
-  (define size (* (resize-array-size resize-array) 2))
-  (define out-array (make-resize-array size))
-  (set-resize-array-array! resize-array (Array-copy-to resize-array out-array))
-  (set-resize-array-size! resize-array (array-length out-array)))
+(define (grow input)
+  (define size (* (Resize-array-size input) 2))
+  (define output (Resize-array-new size))
+  (set-Resize-array-array! input (Array-copy-to (Resize-array-array input) output))
+  (set-Resize-array-size! size))
 
-(define (resize-array-add resize-array item)
-  (define index (+ (resize-array-index resize-array) 1))
-  (define count (+ (resize-array-count resize-array) 1))
-  (define size (resize-array-size resize-array))
+(define (Resize-array-add item input)
+  (define index (add1 (Resize-array-index input)))
+  (define count (add1 (Resize-array-count input)))
+  (define size (Resize-array-size input))
 
-  (when (> count size)
-    (grow resize-array))
+  (when (> (add1 count) size)
+    (grow input))
 
-  (set-resize-array-index! index)
-  (vector-set! resize-array index item))
+  (set-Resize-array-index! input index)
+  (set-Resize-array-count! input count)
+  (vector-set! (Resize-array-array input) index item))
 
-(provide make-resize-array resize-array-add)
+(provide Resize-array-new Resize-array-add)
 
 (module+ test
-  (define people (make-resize-array))
-  (check-equal? (resize-array-array people) (Array-create 256 '())))
+  (define people (Resize-array-new))
+  (define (big-addition-test input)
+    (for-each (lambda (x) (Resize-array-add x input)) (build-list 10000 (lambda (_) 0))))
+
+  (check-equal? (Resize-array-array people) (Array-create 256 '()))
+  (check-eq? (Resize-array-size people) 256)
+  (check-eq? (Resize-array-count people) 0)
+  (Resize-array-add 2 people)
+  (check-eq? (Resize-array-get 0 people) 2)
+  (big-addition-test people))
