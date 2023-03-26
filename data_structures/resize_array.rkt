@@ -10,7 +10,7 @@
 (struct resize-array (array index size count) #:mutable)
 
 (define (make-resize-array [size 256])
-  (resize-array (array-create size '()) -1 size 0))
+  (resize-array (Array-create size '()) -1 size 0))
 
 ; Create a new array of size: size * 2.
 ; Copy all the items from the first array into the new one.
@@ -18,7 +18,7 @@
 (define (grow resize-array)
   (define size (* (resize-array-size resize-array) 2))
   (define out-array (make-resize-array size))
-  (set-resize-array-array! resize-array (array-copy-to resize-array out-array))
+  (set-resize-array-array! resize-array (Array-copy-to resize-array out-array))
   (set-resize-array-size! resize-array (array-length out-array)))
 
 (define (resize-array-add resize-array item)
@@ -36,4 +36,4 @@
 
 (module+ test
   (define people (make-resize-array))
-  (check-equal? (resize-array-array people) (array-create 256 '())))
+  (check-equal? (resize-array-array people) (Array-create 256 '())))
