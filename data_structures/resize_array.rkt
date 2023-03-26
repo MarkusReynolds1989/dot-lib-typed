@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require rackunit
-         "../collections/array.rkt")
+(require "../collections/array.rkt")
 
 ; Array is the actual collection.
 ; Index is the current index we are on, inc to add a new item.
@@ -36,9 +35,11 @@
   (set-Resize-array-count! input count)
   (vector-set! (Resize-array-array input) index item))
 
-(provide Resize-array-new Resize-array-add)
+(provide Resize-array-new
+         Resize-array-add)
 
 (module+ test
+  (require rackunit)
   (define people (Resize-array-new))
   (define (big-addition-test input)
     (for-each (lambda (x) (Resize-array-add x input)) (build-list 10000 (lambda (_) 0))))
