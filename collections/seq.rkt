@@ -8,7 +8,7 @@
   (stream* values))
 
 (define (seq-fold function accumulator sequence)
-    (stream-fold function accumulated sequence))
+    (stream-fold function accumulator sequence))
 
 (define (seq-head sequence)
   (stream-first sequence))

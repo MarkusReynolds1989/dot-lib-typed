@@ -45,7 +45,7 @@
   (hash-map table (lambda (key value) (list key value))))
 
 (define (Map->array table)
-  (List->array (hash-map table (lambda (key value) (list key value)))))
+  (to-array (hash-map table (lambda (key value) (list key value)))))
 
 (provide (all-defined-out) (except-out filter))
 
