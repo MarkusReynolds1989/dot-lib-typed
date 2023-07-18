@@ -20,10 +20,10 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Install Racket
-        run: apt-get install racket
+        run: sudo apt-get install racket
 
       - name: Install Powershell
-        run: apt-get install powershell
+        run: sudo apt-get install powershell
 
       - name: Build Libraries
         run: pwsh build.ps1
