@@ -1,4 +1,4 @@
-a | raco pkg install threading
+"a" | raco pkg install threading
 
 Write-Output "Building List library."
 raco make collections/list.rkt
