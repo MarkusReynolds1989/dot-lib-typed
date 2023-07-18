@@ -1,5 +1,8 @@
-echo "Testing lists."
+Write-Output "Testing List library."
 raco test collections/list.rkt
 
-echo "Testing arrays."
+Write-Output "Testing Array library."
 raco test collections/array.rkt
+
+Write-Output "Testing Map library."
+raco test collections/map.rkt

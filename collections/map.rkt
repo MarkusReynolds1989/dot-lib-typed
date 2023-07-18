@@ -32,8 +32,8 @@
 (define (Map-find key table)
  (hash-ref table key))
 
-(define (Map-find-key predicate table)
-  ( ))
+; (define (Map-find-key predicate table)
+;  ( ))
 
 (define (Map-fold folder state table)
   (let loop ([index 0] [folder folder] [state state] [table table])

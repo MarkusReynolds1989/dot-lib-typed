@@ -1,5 +1,8 @@
-echo "Building list library."
+Write-Output "Building List library."
 raco make collections/list.rkt
 
-echo "Building array library."
+Write-Output "Building Array library."
 raco make collections/array.rkt
+
+Write-Output "Building Map library."
+raco make collections/map.rkt
