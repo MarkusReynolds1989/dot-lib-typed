@@ -319,7 +319,7 @@
 
 ; TODO: list-unzip-threeple
 
-(define (sort source)
+(define (sort-ascending source)
   (sort source <))
 
 (define (sorty-by projection source)
@@ -446,7 +446,7 @@
   (check-equal? (take-while (fn (item) (not (= item 4))) '(1 2 3 4 5 6 7)) '(1 2 3))
   (check-equal? (update-at 1 3 '(1 2 3 4)) '(1 3 3 4))
 
-  (check-equal? (sort '(4 2 3 1)) '(1 2 3 4))
+  (check-equal? (sort-ascending '(4 2 3 1)) '(1 2 3 4))
   (check-equal? (sort-descending '(4 2 3 1)) '(4 3 2 1))
 
   (define unordered-pairs (list (list 4 "four") (list 2 "two") (list 3 "three")))

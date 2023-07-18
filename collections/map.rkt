@@ -30,7 +30,7 @@
   (Map-fold (lambda (acc pair) (filter predicate acc pair)) (Map-empty) table))
 
 (define (Map-find key table)
- (hash-ref table key))
+  (hash-ref table key))
 
 ; (define (Map-find-key predicate table)
 ;  ( ))
@@ -47,7 +47,8 @@
 (define (Map->array table)
   (to-array (hash-map table (lambda (key value) (list key value)))))
 
-(provide (all-defined-out) (except-out filter))
+(provide (all-defined-out)
+         (except-out filter))
 
 (module+ test
   (require rackunit)
