@@ -20,7 +20,10 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Install Racket
-        run: sudo apt-get install racket=8.8
+        run: |
+              sudo add-apt-repository ppa:plt/racket
+              sudo apt update
+              sudo apt install racket=8.8
 
       - name: Install Powershell
         run: sudo apt-get install powershell
