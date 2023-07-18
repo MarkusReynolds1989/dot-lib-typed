@@ -440,7 +440,7 @@
   (check-equal? (List-map-index (lambda (index item) (+ index item)) '(1 2 3 4)) '(1 3 5 7))
 
   (check-eq? (List-max '(1 2 3 4)) 4)
-  (check-eq? (List-max '(100.35 .33 .25 10.99)) 100.35)
+  (check-equal? (List-max '(100.35 .33 .25 10.99)) 100.35)
   (check-equal? (List-of-array #(1 2 3 4)) '(1 2 3 4))
   (check-equal? (List-skip 1 '(1 2 3 4)) '(2 3 4))
   (check-equal? (List-take 2 '(1 2 3 4)) '(1 2))
