@@ -350,7 +350,7 @@
 
 ;; Tests
 (module+ test
-  (require typed/rackunit)
+  (require rackunit)
   (define names '("tom" "cindy" "billy"))
 
   (define (list-exists-two-test-pass)

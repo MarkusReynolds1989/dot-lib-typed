@@ -6,3 +6,6 @@ raco test collections/array.rkt
 
 Write-Output "Testing Map library."
 raco test collections/map.rkt
+
+Write-Output "Testing Seq library."
+raco test collections/seq.rkt
