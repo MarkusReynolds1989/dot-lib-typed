@@ -1,5 +1,5 @@
-raco make collections/list.rkt
+echo "Testing lists."
 raco test collections/list.rkt
 
-raco make collections/array.rkt
+echo "Testing arrays."
 raco test collections/array.rkt
