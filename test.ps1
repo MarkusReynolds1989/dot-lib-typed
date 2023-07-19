@@ -1,14 +1,14 @@
 Write-Output "Testing List library."
-raco test collections/list.rkt
+raco test src/collections/list.rkt
 
 Write-Output "Testing Array library."
-raco test collections/array.rkt
+raco test src/collections/array.rkt
 
 Write-Output "Testing Map library."
-raco test collections/map.rkt
+raco test src/collections/map.rkt
 
 Write-Output "Testing Seq library."
-raco test collections/seq.rkt
+raco test src/collections/seq.rkt
 
 Write-Output "Testing IO library."
-raco test io/file.rkt
+raco test src/io/file.rkt
