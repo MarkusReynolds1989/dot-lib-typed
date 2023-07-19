@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "../collections/array.rkt")
+; TODO: Turn this into a class.
+(require (prefix-in Array. "../collections/array.rkt"))
 
 ; Array is the actual collection.
 ; Index is the current index we are on, inc to add a new item.
@@ -9,10 +10,10 @@
 (struct Resize-array (array index size count) #:mutable)
 
 (define (Resize-array-new [size 256])
-  (Resize-array (Array-create size '()) -1 size 0))
+  (Resize-array (Array.create size '()) -1 size 0))
 
 (define (Resize-array-get index input)
-  (Array-get index (Resize-array-array input)))
+  (Array.get index (Resize-array-array input)))
 
 ; Create a new array of size: size * 2.
 ; Copy all the items from the first array into the new one.
@@ -20,7 +21,7 @@
 (define (grow input)
   (define size (* (Resize-array-size input) 2))
   (define output (Resize-array-new size))
-  (set-Resize-array-array! input (Array-copy-to (Resize-array-array input) output))
+  (set-Resize-array-array! input (Array.copy-to (Resize-array-array input) output))
   (set-Resize-array-size! size))
 
 (define (Resize-array-add item input)
@@ -44,7 +45,7 @@
   (define (big-addition-test input)
     (for-each (lambda (x) (Resize-array-add x input)) (build-list 10000 (lambda (_) 0))))
 
-  (check-equal? (Resize-array-array people) (Array-create 256 '()))
+  (check-equal? (Resize-array-array people) (Array.create 256 '()))
   (check-eq? (Resize-array-size people) 256)
   (check-eq? (Resize-array-count people) 0)
   (Resize-array-add 2 people)
