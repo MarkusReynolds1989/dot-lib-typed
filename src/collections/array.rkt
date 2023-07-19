@@ -189,22 +189,36 @@
             (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
             10)
 
-  (check-equal? (filter (fn (item) (= item 1)) (vector 1 1 1 2 2 2)) (vector 1 1 1))
+  (test-equal? "Filter takes any item equal to one."
+               (filter (fn (item) (= item 1)) (vector 1 1 1 2 2 2))
+               (vector 1 1 1))
 
-  (check-equal? (filter (fn (item) (> (string-length item) 3)) (vector "one" "two" "three"))
-                (vector "three"))
+  (test-equal? "Filter takes any string length that is greater than 3"
+               (filter (fn (item) (> (string-length item) 3)) (vector "one" "two" "three"))
+               (vector "three"))
 
-  (check-true (for-all (fn (item) (> item 2)) (vector 3 4 5 6 7)))
-  (check-false (for-all (fn (item) (> item 2)) (vector 1 2 3 4 5)))
-  (check-eq? (get 0 (vector 1 2 3 4)) 1)
-  (check-equal? (map (fn (item) (add1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
-  (check-equal? (map (fn (item) (string-length item)) (vector "one" "two" "three")) (vector 3 3 5))
+  (test-true "For-all returns true, the item in the vector is greater than 2."
+             (for-all (fn (item) (> item 2)) (vector 3 4 5 6 7)))
 
-  (check-equal? (init 3
-                      (fn (item) (add1 item)))
-                (vector 1 2 3))
+  (test-false "For-all returns false because no items match."
+              (for-all (fn (item) (> item 2)) (vector 1 2 3 4 5)))
 
-  (check-true (is-empty? (vector)))
-  (check-false (is-empty? (vector 1)))
+  (test-eq? "Getting the first element returns 1." (get 0 (vector 1 2 3 4)) 1)
 
-  (check-eq? (last (vector 1 2 3 4)) 4))
+  (test-equal? "Mapping over an array works correctly, simple addition."
+               (map (fn (item) (add1 item)) (vector 1 2 3 4))
+               (vector 2 3 4 5))
+
+  (test-equal? "Mapping over an array works correctly, length of strings."
+               (map (fn (item) (string-length item)) (vector "one" "two" "three"))
+               (vector 3 3 5))
+
+  (test-equal? "Initializing an array works correctly."
+               (init 3
+                     (fn (item) (add1 item)))
+               (vector 1 2 3))
+
+  (test-true "The array is empty." (is-empty? (vector)))
+  (test-false "The array is not empty." (is-empty? (vector 1)))
+
+  (test-eq? "The last item in the array is 4." (last (vector 1 2 3 4)) 4))
