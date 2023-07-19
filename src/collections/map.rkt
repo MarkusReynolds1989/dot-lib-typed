@@ -52,15 +52,29 @@
   (require rackunit)
   (define table (hash 1 "one"))
   (define add-table (hash "one" 1 "two" 2 "three" 3))
-  (check-equal? (add 2 "two" table) (hash 1 "one" 2 "two"))
-  (check-equal? (change 1 (fn (_) "three") table) (hash 1 "three"))
-  (check-true (contains-key 1 table))
-  (check-eq? (count table) 1)
-  (check-equal? (empty) (hash))
-  (check-equal? (to-list table) (list (list 1 "one")))
-  (check-equal? (to-array table) (vector (list 1 "one")))
-  (check-equal? (map (fn (key value) (values (add1 key) value)) table) (hash 2 "one"))
-  (check-equal? (fold (fn (acc pair) (+ (cdr pair) acc)) 0 add-table) 6)
-  (check-equal? (filter (fn (pair) (> (cdr pair) 1)) add-table) (hash "two" 2 "three" 3))
-  (check-true (exists (fn (x) (equal? (car x) "one")) add-table))
-  (check-equal? (find "one" add-table) 1))
+
+  (test-equal? "Add works." (add 2 "two" table) (hash 1 "one" 2 "two"))
+
+  (test-equal? "Change works." (change 1 (fn (_) "three") table) (hash 1 "three"))
+
+  (test-true "Contains works." (contains-key 1 table))
+
+  (test-eq? "Count works." (count table) 1)
+
+  (test-equal? "Empty works." (empty) (hash))
+
+  (test-equal? "To-list works." (to-list table) (list (list 1 "one")))
+
+  (test-equal? "To-array works." (to-array table) (vector (list 1 "one")))
+
+  (test-equal? "Map works." (map (fn (key value) (values (add1 key) value)) table) (hash 2 "one"))
+
+  (test-equal? "Fold works." (fold (fn (acc pair) (+ (cdr pair) acc)) 0 add-table) 6)
+
+  (test-equal? "Filter works."
+               (filter (fn (pair) (> (cdr pair) 1)) add-table)
+               (hash "two" 2 "three" 3))
+
+  (test-true "Exists works." (exists (fn (x) (equal? (car x) "one")) add-table))
+
+  (test-equal? "Find works." (find "one" add-table) 1))
