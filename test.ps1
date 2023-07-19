@@ -9,3 +9,6 @@ raco test collections/map.rkt
 
 Write-Output "Testing Seq library."
 raco test collections/seq.rkt
+
+Write-Output "Testing IO library."
+raco test io/file.rkt
