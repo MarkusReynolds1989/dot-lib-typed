@@ -393,7 +393,7 @@
 
   (test-eq? "Find works and finds 5 in the list." (find (fn (item) (= item 5)) '(1 2 3 5 4)) 5)
 
-  (check-false "Find returns false, there is no 1 in the list."
+  (test-false "Find returns false, there is no 1 in the list."
                (find (fn (item) (= item 1)) '(2 3 4 5)))
 
   (test-eq? "Find back finds 4 in the list." (find-back (fn (item) (= item 4)) '(1 2 3 5 4)) 4)
