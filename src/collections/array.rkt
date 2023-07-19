@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require "../globals.rkt")
+
 ; TODO: array-all-pairs
 
 (define (append array-one array-two)
@@ -73,7 +75,7 @@
 ; TODO: array-fill target target-index count value
 
 (define (filter predicate array)
-  (fold (lambda (acc item) (if (predicate item) (append (vector item) acc) acc))
+  (fold (fn (acc item) (if (predicate item) (append (vector item) acc) acc))
         (create 0 (get 0 array))
         array))
 
@@ -149,7 +151,7 @@
     (mapper item)))
 
 (define (sum array)
-  (fold (lambda (acc item) (+ acc item)) 0 array))
+  (fold (fn (acc item) (+ acc item)) 0 array))
 
 ;(define (sort array)
 ;  (vector-sort array))
@@ -160,36 +162,63 @@
   (require rackunit)
   (define old-array (vector 1 2 3 4))
 
-  (check-equal? (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
-  (check-true (contains -100 (vector 1 2 3 4 100 23 -100)))
-  (check-false (contains "blue" (vector "red" "yellow" "green")))
-  (check-not-eq? old-array (copy old-array))
-  (check-equal? (copy old-array) old-array)
-  (check-equal? (create 3 0) (vector 0 0 0))
-  (check-false (exactly-one (vector 1 2)))
-  (check-eq? (exactly-one (vector 1)) 1)
-  (check-true (exists (lambda (item) (= item 1)) (vector 1 2 3 4)))
-  (check-false (exists (lambda (item) (equal? item "blue")) (vector "red" "yellow" "green")))
+  (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
 
-  (check-eq? (fold (lambda (acc item) (+ acc item)) 0 (vector 1 2 3 4)) 10)
+  (test-true "Contains test should resolve to true.." (contains -100 (vector 1 2 3 4 100 23 -100)))
 
-  (check-equal? (filter (lambda (item) (= item 1)) (vector 1 1 1 2 2 2)) (vector 1 1 1))
+  (test-false "Contains test should resolve to false."
+              (contains "blue" (vector "red" "yellow" "green")))
 
-  (check-equal? (filter (lambda (item) (> (string-length item) 3)) (vector "one" "two" "three"))
-                (vector "three"))
+  (test-case "Old array isn't copying, new pointer."
+    (check-not-eq? old-array (copy old-array)))
 
-  (check-true (for-all (lambda (item) (> item 2)) (vector 3 4 5 6 7)))
-  (check-false (for-all (lambda (item) (> item 2)) (vector 1 2 3 4 5)))
-  (check-eq? (get 0 (vector 1 2 3 4)) 1)
-  (check-equal? (map (lambda (item) (add1 item)) (vector 1 2 3 4)) (vector 2 3 4 5))
-  (check-equal? (map (lambda (item) (string-length item)) (vector "one" "two" "three"))
-                (vector 3 3 5))
+  (test-equal? "Old array matches new pointers." (copy old-array) old-array)
 
-  (check-equal? (init 3
-                      (lambda (item) (add1 item)))
-                (vector 1 2 3))
+  (test-equal? "Creating an array works correctly." (create 3 0) (vector 0 0 0))
 
-  (check-true (is-empty? (vector)))
-  (check-false (is-empty? (vector 1)))
+  (test-false "Exactly-one test, array has more than one." (exactly-one (vector 1 2)))
 
-  (check-eq? (last (vector 1 2 3 4)) 4))
+  (test-eq? "Exactly-one test, array has exactly one." (exactly-one (vector 1)) 1)
+
+  (test-true "Exists test, 1 is in the array." (exists (fn (item) (= item 1)) (vector 1 2 3 4)))
+
+  (test-false "Exists test, blue is not in the array."
+              (exists (fn (item) (equal? item "blue")) (vector "red" "yellow" "green")))
+
+  (test-eq? "Fold test, array should add up to 10."
+            (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
+            10)
+
+  (test-equal? "Filter takes any item equal to one."
+               (filter (fn (item) (= item 1)) (vector 1 1 1 2 2 2))
+               (vector 1 1 1))
+
+  (test-equal? "Filter takes any string length that is greater than 3"
+               (filter (fn (item) (> (string-length item) 3)) (vector "one" "two" "three"))
+               (vector "three"))
+
+  (test-true "For-all returns true, the item in the vector is greater than 2."
+             (for-all (fn (item) (> item 2)) (vector 3 4 5 6 7)))
+
+  (test-false "For-all returns false because no items match."
+              (for-all (fn (item) (> item 2)) (vector 1 2 3 4 5)))
+
+  (test-eq? "Getting the first element returns 1." (get 0 (vector 1 2 3 4)) 1)
+
+  (test-equal? "Mapping over an array works correctly, simple addition."
+               (map (fn (item) (add1 item)) (vector 1 2 3 4))
+               (vector 2 3 4 5))
+
+  (test-equal? "Mapping over an array works correctly, length of strings."
+               (map (fn (item) (string-length item)) (vector "one" "two" "three"))
+               (vector 3 3 5))
+
+  (test-equal? "Initializing an array works correctly."
+               (init 3
+                     (fn (item) (add1 item)))
+               (vector 1 2 3))
+
+  (test-true "The array is empty." (is-empty? (vector)))
+  (test-false "The array is not empty." (is-empty? (vector 1)))
+
+  (test-eq? "The last item in the array is 4." (last (vector 1 2 3 4)) 4))

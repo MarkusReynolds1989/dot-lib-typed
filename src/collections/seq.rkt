@@ -23,8 +23,14 @@
   (require rackunit
            threading)
 
-  (check-eq? 1 (head (create 1 2 3)))
-  (check-equal? (stream->list (stream 1 2 3)) (stream->list (create 1 2 3)))
-  (check-equal? (stream->list (create 1 2 3 4 5)) (stream->list (append (create 1 2) (create 3 4 5))))
-  (check-equal? (stream->list (create 3 4 5))
-                (stream->list (~>> (create 2 3 4) (map (fn (x) (+ x 1)))))))
+  (test-eq? "Head works." 1 (head (create 1 2 3)))
+
+  (test-equal? "Create works." (stream->list (stream 1 2 3)) (stream->list (create 1 2 3)))
+
+  (test-equal? "Append works."
+               (stream->list (create 1 2 3 4 5))
+               (stream->list (append (create 1 2) (create 3 4 5))))
+
+  (test-equal? "Map works."
+               (stream->list (create 3 4 5))
+               (stream->list (~>> (create 2 3 4) (map (fn (x) (+ x 1)))))))

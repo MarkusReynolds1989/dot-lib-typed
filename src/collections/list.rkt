@@ -349,109 +349,144 @@
 (module+ test
   (require rackunit)
   (define names '("tom" "cindy" "billy"))
+  (define list-one '(1 2 3 4))
+  (define list-two '(4 5 6 7))
 
-  (define (list-exists-two-test-pass)
-    (define list-one '(1 2 3 4))
-    (define list-two '(4 5 6 7))
-    (check-true (exists-two (fn (x y) (= (+ x y) 5)) list-one list-two)))
-  (list-exists-two-test-pass)
+  (test-true "Exists-two passes." (exists-two (fn (x y) (= (+ x y) 5)) list-one list-two))
 
-  (define (list-exists-two-test-fail)
-    (define list-one '(1 2 3 4))
-    (define list-two '(4 5 6 7))
-    (check-false (exists-two (fn (x y) (= (+ x y) -1)) list-one list-two)))
+  ;(test-false "Exists-two fails." (exists-two (fn (x y) (= (+ x y) -1)) list-one list-two))
 
-  (define (list-filter-test-pass)
-    (define source '("one" "two" "three"))
-    (check-equal? (filter (fn (item) (< (string-length item) 5)) source) '("one" "two")))
-  (list-filter-test-pass)
+  (define source '("one" "two" "three"))
 
-  (define (list-fold-two-test)
-    (define result
-      (fold-two (fn (state item-one item-two) (+ state item-one (string-length item-two)))
-                0
-                '(1 2 3)
-                '("one" "two" "three")))
+  (test-equal? "Filter out any item that is string length bigger than 5."
+               (filter (fn (item) (< (string-length item) 5)) source)
+               '("one" "two"))
 
-    (check-eq? result 17))
-  (list-fold-two-test)
+  (test-eq? "Fold two lists together to get the total."
+            (fold-two (fn (state item-one item-two) (+ state item-one (string-length item-two)))
+                      0
+                      '(1 2 3)
+                      '("one" "two" "three"))
+            17)
 
-  (check-equal? (append (list 1 2 3) (list 4 5 6)) (list 1 2 3 4 5 6))
+  (test-equal? "Appending to a list works." (append (list 1 2 3) (list 4 5 6)) (list 1 2 3 4 5 6))
 
-  (check-eq? (average (list 0 0 1 4 5)) 2)
+  (test-eq? "Average of a list works." (average (list 0 0 1 4 5)) 2)
 
-  (check-equal? (average-by (fn (x) (string-length x)) names) 13/3)
+  (test-equal? "Average-by of a list works correctly."
+               (average-by (fn (x) (string-length x)) names)
+               13/3)
 
-  (check-true (contains 3 '(1 2 3)))
+  (test-true "Contains finds that 3 is in the list." (contains 3 '(1 2 3)))
 
-  (check-false (contains "test" '("one")))
+  (test-false "Contains can't find 'test' in the list." (contains "test" '("one")))
 
-  (check-eq? (empty) '())
+  (test-eq? "The list is empty." (empty) '())
 
-  (check-eq? (exactly-one '(1)) 1)
+  (test-eq? "Exactly-one is true because the list has one element." (exactly-one '(1)) 1)
 
-  (check-true (exists (fn (x) (> x 1)) '(1 2 3)))
-  (check-false (exists (fn (x) (< x 1)) '(1 2 3)))
+  (test-true "Exists returns true because the predicate works on the list."
+             (exists (fn (x) (> x 1)) '(1 2 3)))
 
-  (check-eq? (find (fn (item) (= item 5)) '(1 2 3 5 4)) 5)
-  (check-false (find (fn (item) (= item 1)) '(2 3 4 5)))
+  (test-false "Exists returns false because the predicate isn't in the list."
+              (exists (fn (x) (< x 1)) '(1 2 3)))
 
-  (check-eq? (find-back (fn (item) (= item 4)) '(1 2 3 5 4)) 4)
-  (check-false (find-back (fn (item) (= item 0)) '(2 3 4 5)))
+  (test-eq? "Find works and finds 5 in the list." (find (fn (item) (= item 5)) '(1 2 3 5 4)) 5)
 
-  (check-eq? (find-index (fn (item) (= item 3)) '(1 3 4 5)) 1)
-  (check-false (find-index (fn (item) (equal? item "Test")) names))
+  (check-false "Find returns false, there is no 1 in the list."
+               (find (fn (item) (= item 1)) '(2 3 4 5)))
 
-  (check-eq? (find-index-back (fn (item) (= item 3)) '(1 3 4 5)) 1)
-  (check-false (find-index-back (fn (item) (equal? item "Tim")) names))
+  (test-eq? "Find back finds 4 in the list." (find-back (fn (item) (= item 4)) '(1 2 3 5 4)) 4)
 
-  (check-eq? (fold (fn (state item) (+ state item)) 0 '(1 2 3)) 6)
+  (test-false "Find back doesn't find 0 in the list." (find-back (fn (item) (= item 0)) '(2 3 4 5)))
 
-  (check-equal? (fold (fn (state item) (string-append state " " item)) "" '("one" "two" "three"))
-                " one two three")
+  (test-eq? "Find index finds 1 is the index of 3." (find-index (fn (item) (= item 3)) '(1 3 4 5)) 1)
 
-  (check-equal? (fold-back (fn (state item) (/ item state)) 2 '(256 4048 24)) 192/253)
-  (check-true (for-all (fn (item) (= 1 item)) '(1 1 1 1)))
-  (check-false (for-all (fn (item) (= 1 item)) '()))
+  (test-false "Find index returns false, test isn't in the list."
+              (find-index (fn (item) (equal? item "Test")) names))
 
-  (check-eq? (head '(1 2 3 4)) 1)
+  (test-eq? "Find index back finds the index of 3 is 1."
+            (find-index-back (fn (item) (= item 3)) '(1 3 4 5))
+            1)
 
-  (check-equal? (indexed '(1 2 3)) '((0 . 1) (1 . 2) (2 . 3)))
+  (test-false "Find index back returns false, Tim isn't in the list."
+              (find-index-back (fn (item) (equal? item "Tim")) names))
 
-  (check-equal? (init 4
-                      (fn (item) (+ item 5)))
-                '(5 6 7 8))
+  (test-eq? "Fold adds up the list to it's sum." (fold (fn (state item) (+ state item)) 0 '(1 2 3)) 6)
 
-  (check-eq? (item 1 '(1 2 3 4)) 2)
-  (check-false (item 1 '()))
-  (check-false (last '()))
+  (test-equal? "Fold appends the strings together correctly."
+               (fold (fn (state item) (string-append state " " item)) "" '("one" "two" "three"))
+               " one two three")
 
-  (check-eq? (last '(1 2 3 4 25 100)) 100)
+  (test-equal? "Fold back works correctly by dividing the items in the list."
+               (fold-back (fn (state item) (/ item state)) 2 '(256 4048 24))
+               192/253)
 
-  (check-eq? (length '(1 2 3 4)) 4)
+  (test-true "For all is true, every item is 1." (for-all (fn (item) (= 1 item)) '(1 1 1 1)))
 
-  (check-equal? (map (fn (item) (+ item 2)) '(1 2 3 4)) '(3 4 5 6))
+  (test-false "For all is false, the list is empty." (for-all (fn (item) (= 1 item)) '()))
 
-  (check-equal? (map-index (fn (index item) (+ index item)) '(1 2 3 4)) '(1 3 5 7))
+  (test-eq? "Getting the head of the list works." (head '(1 2 3 4)) 1)
 
-  (check-eq? (max '(1 2 3 4)) 4)
-  (check-equal? (max '(100.35 .33 .25 10.99)) 100.35)
-  (check-equal? (of-array #(1 2 3 4)) '(1 2 3 4))
-  (check-equal? (skip 1 '(1 2 3 4)) '(2 3 4))
-  (check-equal? (take 2 '(1 2 3 4)) '(1 2))
-  (check-equal? (split-at 3 '(8 4 3 1 6 1)) (list (list 8 4 3) (list 1 6 1)))
-  (check-equal? (split-at 2 '(1 2 3 4 5)) (list (list 1 2) (list 3 4 5)))
-  (check-eq? (sum '(1 2 3 4)) 10)
-  (check-equal? (sum '(1.0 2.0 3.4 4.0)) 10.4)
-  (check-equal? (take-while (fn (item) (not (= item 4))) '(1 2 3 4 5 6 7)) '(1 2 3))
-  (check-equal? (update-at 1 3 '(1 2 3 4)) '(1 3 3 4))
+  (test-equal? "Indexing the list works." (indexed '(1 2 3)) '((0 . 1) (1 . 2) (2 . 3)))
 
-  (check-equal? (sort-ascending '(4 2 3 1)) '(1 2 3 4))
-  (check-equal? (sort-descending '(4 2 3 1)) '(4 3 2 1))
+  (test-equal? "Init the list works."
+               (init 4
+                     (fn (item) (+ item 5)))
+               '(5 6 7 8))
+
+  (test-eq? "Getting the item by index works." (item 1 '(1 2 3 4)) 2)
+
+  (test-false "Getting returns false because the list is empty." (item 1 '()))
+
+  (test-false "Last returns false because the list is empty." (last '()))
+
+  (test-eq? "Last returns 100." (last '(1 2 3 4 25 100)) 100)
+
+  (test-eq? "Length gets the correct lenght of the list." (length '(1 2 3 4)) 4)
+
+  (test-equal? "Mapping over the list works." (map (fn (item) (+ item 2)) '(1 2 3 4)) '(3 4 5 6))
+
+  (test-equal? "Map index works correctly."
+               (map-index (fn (index item) (+ index item)) '(1 2 3 4))
+               '(1 3 5 7))
+
+  (test-eq? "Getting the max of the list works." (max '(1 2 3 4)) 4)
+
+  (test-equal? "Getting the max of the double list works." (max '(100.35 .33 .25 10.99)) 100.35)
+
+  (test-equal? "Converting the array to a list works." (of-array #(1 2 3 4)) '(1 2 3 4))
+
+  (test-equal? "Skipping works." (skip 1 '(1 2 3 4)) '(2 3 4))
+
+  (test-equal? "Taking works." (take 2 '(1 2 3 4)) '(1 2))
+
+  (test-equal? "Splitting the list works."
+               (split-at 3 '(8 4 3 1 6 1))
+               (list (list 8 4 3) (list 1 6 1)))
+
+  (test-equal? "Splitting works part 2." (split-at 2 '(1 2 3 4 5)) (list (list 1 2) (list 3 4 5)))
+
+  (test-eq? "Summing ints works." (sum '(1 2 3 4)) 10)
+
+  (test-equal? "Summing doubles works." (sum '(1.0 2.0 3.4 4.0)) 10.4)
+
+  (test-equal? "Take while works."
+               (take-while (fn (item) (not (= item 4))) '(1 2 3 4 5 6 7))
+               '(1 2 3))
+
+  (test-equal? "Update at works." (update-at 1 3 '(1 2 3 4)) '(1 3 3 4))
+
+  (test-equal? "Sort-ascending works." (sort-ascending '(4 2 3 1)) '(1 2 3 4))
+
+  (test-equal? "Sort-descending works." (sort-descending '(4 2 3 1)) '(4 3 2 1))
 
   (define unordered-pairs (list (list 4 "four") (list 2 "two") (list 3 "three")))
 
-  (check-equal? (sorty-by (fn (x) (car x)) unordered-pairs)
-                (list (list 2 "two") (list 3 "three") (list 4 "four")))
-  (check-equal? (sorty-by-descending (fn (x) (car x)) unordered-pairs)
-                (list (list 4 "four") (list 3 "three") (list 2 "two"))))
+  (test-equal? "Sort-by works."
+               (sorty-by (fn (x) (car x)) unordered-pairs)
+               (list (list 2 "two") (list 3 "three") (list 4 "four")))
+
+  (test-equal? "Sort-by-descending works."
+               (sorty-by-descending (fn (x) (car x)) unordered-pairs)
+               (list (list 4 "four") (list 3 "three") (list 2 "two"))))
