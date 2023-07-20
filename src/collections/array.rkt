@@ -1,25 +1,24 @@
 #lang racket/base
 
-(require "../globals.rkt")
+(require "../globals.rkt"
+         racket/vector)
 
-; TODO: all-pairs
+(define (all-pairs array-one array-two)
+  (define result (empty))
+  (for ([index (in-range 0 (length array-one))])
+    (set! result (append result (vector (list (get index array-one) (get index array-two))))))
+    result)
 
 (define (append array-one array-two)
-  (let ([new-array (make-vector (+ (length array-one) (vector-length array-two)) (get 0 array-one))])
-    (vector-copy! new-array 0 array-one 0 (length array-one))
-    (vector-copy! new-array (length array-one) array-two 0 (vector-length array-two))
-    new-array))
+  (vector-append array-one array-two))
 
 (define (average input)
   (/ (sum input) (length input)))
-; Come back after sum.
-;(: array-average (-> (Vectorof Number) Number))
-;(define (array-average source)
-;  )
 
 ; TODO: array-average-by
 
-; TODO: array-blit, this is just vector-copy!
+(define (array-blit dest dest-start src [src-start 0] [src-end (length src)])
+  (vector-copy! dest dest-start src src-start src-end))
 
 ; TODO: array-choose
 
@@ -32,20 +31,19 @@
 ; TODO: array-concat
 
 (define (contains value array)
-  (let ([result #f])
-    (for ([index (in-range 0 (length array))])
-      (when (equal? value (get index array))
-        (set! result #t)))
-    result))
+  (define result #f)
+  (for ([index (in-range 0 (length array))])
+    (when (equal? value (get index array))
+      (set! result #t)))
+  result)
 
 (define (copy array)
   (define new-array (create (length array) (get 0 array)))
-  (vector-copy! new-array 0 array 0 (length array))
-
+  (array-blit new-array 0 array)
   new-array)
 
 (define (copy-to in-array out-array)
-  (vector-copy! out-array 0 in-array 0 (length out-array)))
+  (array-blit out-array 0 in-array 0 (length out-array)))
 
 ; TODO: array-count-by
 
@@ -120,10 +118,8 @@
 ; TODO: array-insert-many-at
 
 ; TODO: array-is-empty?
-(define (is-empty? array)
+(define (is-empty array)
   (= (length array) 0))
-
-; TODO: array-item is the same as array-get, may not do it.
 
 (define (iter action array)
   (for ([index (in-range 0 (length array))])
@@ -163,6 +159,11 @@
 (module+ test
   (require rackunit)
   (define old-array (vector 1 2 3 4))
+  (define new-array (vector 0 0 0 0))
+
+  (test-equal? "All-pairs works correctly."
+               (all-pairs (vector 1 2 3 4) (vector 1 2 3 4))
+               (vector '(1 1) '(2 2) '(3 3) '(4 4)))
 
   (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
 
@@ -172,6 +173,12 @@
 
   (test-false "Contains test should resolve to false."
               (contains "blue" (vector "red" "yellow" "green")))
+
+  (test-equal? "Copy-to works correctly"
+               old-array
+               (begin
+                 (copy-to new-array old-array)
+                 new-array))
 
   (test-case "Old array isn't copying, new pointer."
     (check-not-eq? old-array (copy old-array)))
@@ -222,7 +229,8 @@
                      (fn (item) (add1 item)))
                (vector 1 2 3))
 
-  (test-true "The array is empty." (is-empty? (vector)))
-  (test-false "The array is not empty." (is-empty? (vector 1)))
+  (test-true "The array is empty." (is-empty (vector)))
+
+  (test-false "The array is not empty." (is-empty (vector 1)))
 
   (test-eq? "The last item in the array is 4." (last (vector 1 2 3 4)) 4))
