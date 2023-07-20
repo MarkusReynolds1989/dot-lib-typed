@@ -2,7 +2,7 @@
 
 (require "../globals.rkt")
 
-; TODO: array-all-pairs
+; TODO: all-pairs
 
 (define (append array-one array-two)
   (let ([new-array (make-vector (+ (length array-one) (vector-length array-two)) (get 0 array-one))])
@@ -10,6 +10,8 @@
     (vector-copy! new-array (length array-one) array-two 0 (vector-length array-two))
     new-array))
 
+(define (average input)
+  (/ (sum input) (length input)))
 ; Come back after sum.
 ;(: array-average (-> (Vectorof Number) Number))
 ;(define (array-average source)
@@ -163,6 +165,8 @@
   (define old-array (vector 1 2 3 4))
 
   (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
+
+  (test-equal? "Average works correctly." 3 (average (vector 2 2 4 4)))
 
   (test-true "Contains test should resolve to true.." (contains -100 (vector 1 2 3 4 100 23 -100)))
 
