@@ -56,6 +56,7 @@
 
 ; TODO: concat - may not need this, this is to take Seqs of arrays and concat them into one.
 
+; Tests if the array contains the specified element.
 (define (contains value array)
   (define result #f)
   (for ([index (in-range 0 (length array))])
@@ -63,16 +64,11 @@
       (set! result #t)))
   result)
 
+; Builds a new array that contains the elements of the array given.
 (define (copy array)
   (define new-array (create (length array) (get 0 array)))
   (array-blit new-array 0 array)
   new-array)
-
-(define (copy-to in-array out-array)
-  (array-blit out-array 0 in-array 0 (length out-array)))
-
-(define (create count init-value)
-  (make-vector count init-value))
 
 ; Applies a key-generating function to each element of an array and returns an array
 ; yielding unique keys and their number of occurrences in the original array.
@@ -87,6 +83,10 @@
              (Map.empty)
              input)
        (Map.to-array)))
+
+; Creates an array whose elements are all initially the given value.
+(define (create count init-value)
+  (make-vector count init-value))
 
 ; Returns an array that contains no duplicate entries according to generic hash and
 ; equality compairsons on the entries. If an element occurs multiple times in the
@@ -112,7 +112,7 @@
 (define (exactly-one array)
   (and (= (length array) 1) (get 0 array)))
 
-; TODO: Come back to this after sequence is ready.
+; TODO: except - Come back to this after sequence is ready.
 ; Returns a new list with the distinct elements of the input array with do not appear
 ; in the items-to-exclude sequence, using generic hash and equality comparison to compare values.
 
@@ -132,15 +132,23 @@
       (set! result #t)))
   result)
 
-; TODO: array-fill target target-index count value
+; Fills a range of elements of the array with the given value.
+(define (fill target target-index count value)
+  (for ([index (in-range target-index count)])
+    (set target index value)))
 
-(define (filter predicate array)
+; Returns a new collection containing only the elements of the collection for which the given
+; predicate returns "true".
+(define (filter predicate input)
   (fold (fn (acc item) (if (predicate item) (append (vector item) acc) acc))
-        (create 0 (get 0 array))
-        array))
+        (create 0 (get 0 input))
+        input))
 
-(define (fold folder state array)
-  (let loop ([index 0] [folder folder] [state state] [array array])
+; Applies a function to each element of the collection, threading an accumulator
+; argument through the computation. If the input function is f and the elements are
+; i0..iN then computes f(...(f s i0)...) iN.
+(define (fold folder state input)
+  (let loop ([index 0] [folder folder] [state state] [array input])
     (cond
       [(= index (length array)) state]
       [else (loop (+ 1 index) folder (folder state (get index array)) array)])))
@@ -208,6 +216,10 @@
   (for/vector ([item array])
     (mapper item)))
 
+; Sets an element of an array.
+(define (set array index value)
+  (vector-set! array index value))
+
 (define (skip size array)
   (vector-drop array size))
 
@@ -224,8 +236,6 @@
 
 (module+ test
   (require rackunit)
-  (define old-array (vector 1 2 3 4))
-  (define new-array (vector 0 0 0 0))
 
   (test-equal? "All-pairs works correctly."
                (all-pairs (vector 1 2 3 4) (vector 1 2 3 4))
@@ -248,9 +258,7 @@
   (test-false "Contains test should resolve to false."
               (contains "blue" (vector "red" "yellow" "green")))
 
-  ;(test-eq? "Compare-with all are equal."
-  ;          (compare-with (fn (x y) (if (= x y) 0 1)) ((vector 1 2 3 4) (vector 1 2 3 4)))
-  ;          0)
+  (test-equal? "Copy works correctly." (copy #(1 2 3)) #(1 2 3))
 
   (test-equal? "Count-by works" (count-by (fn (x) x) #(1 1 1)) #((1 3)))
 
@@ -276,6 +284,11 @@
               (exists (fn (item) (equal? item "blue")) (vector "red" "yellow" "green")))
 
   (test-true "Exists-two works correctly." (exists-two (fn (x y) (= x y)) #(1 2 3 4) #(2 3 6 4)))
+
+  (test-case "Fill works correctly."
+    (define filled (vector 1 2 3 4))
+    (fill filled 1 2 3)
+    (check-equal? filled #(1 3 3 4)))
 
   (test-eq? "Fold test, array should add up to 10."
             (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
