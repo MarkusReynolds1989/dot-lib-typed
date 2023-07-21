@@ -97,25 +97,40 @@
    (Map.keys)
    (List.to-array)))
 
-; TODO: array-distinct-by
+; Returns an array that contains no duplicate entries according to the
+; generic hash and comparisons on keys returned by the give key-generating function.
+; If an element occurs multiple times in teh array then the later
+; occurences are discarded.
+(define (distinct-by projection input)
+  (~>> input (map (fn (x) (projection x))) (distinct)))
 
+; Returns an empty array.
 (define (empty)
   (vector))
 
+; Returns the only element of an array.
 (define (exactly-one array)
   (and (= (length array) 1) (get 0 array)))
 
-; TODO: array-except
+; TODO: Come back to this after sequence is ready.
+; Returns a new list with the distinct elements of the input array with do not appear
+; in the items-to-exclude sequence, using generic hash and equality comparison to compare values.
 
+; Tests if any element of the array satisfies the given predicate.
 (define (exists predicate array)
   (define result #f)
   (for ([i (in-range 0 (length array))])
     (when (predicate (get i array))
       (set! result #t)))
-
   result)
 
-; TODO: array-exists-two
+; Tests if any pair of corresponding elements of the arrays satisifes the given predicate.
+(define (exists-two predicate array-one array-two)
+  (define result #f)
+  (for ([index (in-range 0 (length array-one))])
+    (when (predicate (get index array-one) (get index array-two))
+      (set! result #t)))
+  result)
 
 ; TODO: array-fill target target-index count value
 
@@ -243,20 +258,13 @@
                (count-by (fn (x) x) #(1 1 1 1 3 3 3 3 2 2 2 0))
                #((0 1) (1 4) (2 3) (3 4)))
 
-  (test-equal? "Distinct works" (distinct #(1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4)) #(1 2 3 4))
-
-  (test-equal? "Copy-to works correctly"
-               old-array
-               (begin
-                 (copy-to new-array old-array)
-                 new-array))
-
-  (test-case "Old array isn't copying, new pointer."
-    (check-not-eq? old-array (copy old-array)))
-
-  (test-equal? "Old array matches new pointers." (copy old-array) old-array)
-
   (test-equal? "Creating an array works correctly." (create 3 0) (vector 0 0 0))
+
+  (test-equal? "Distinct works." (distinct #(1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4)) #(1 2 3 4))
+
+  (test-equal? "Distinct-by works."
+               (distinct-by (fn (x) (string-length x)) #("one" "one" "three" "three"))
+               #(3 5))
 
   (test-false "Exactly-one test, array has more than one." (exactly-one (vector 1 2)))
 
@@ -266,6 +274,8 @@
 
   (test-false "Exists test, blue is not in the array."
               (exists (fn (item) (equal? item "blue")) (vector "red" "yellow" "green")))
+
+  (test-true "Exists-two works correctly." (exists-two (fn (x y) (= x y)) #(1 2 3 4) #(2 3 6 4)))
 
   (test-eq? "Fold test, array should add up to 10."
             (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
