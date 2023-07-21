@@ -24,6 +24,9 @@
 (define (get key table)
   (hash-ref table key))
 
+(define (keys table)
+  (hash-keys table))
+
 (define (map mapping table)
   (hash-map/copy table mapping))
 
@@ -47,6 +50,9 @@
 
 (define (to-array table)
   (List.to-array (hash-map table (fn (key value) (list key value)))))
+
+(define (values table)
+  (hash-values table))
 
 (provide (all-defined-out)
          (except-out map-filter))

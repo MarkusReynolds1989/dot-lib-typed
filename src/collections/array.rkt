@@ -2,6 +2,7 @@
 
 (require "../globals.rkt"
          (prefix-in Map. "map.rkt")
+         (prefix-in List. "list.rkt")
          racket/vector
          threading)
 
@@ -87,7 +88,14 @@
              input)
        (Map.to-array)))
 
-; TODO: array-distinct - just a hashmap or set if they have it.
+; Returns an array that contains no duplicate entries according to generic hash and
+; equality compairsons on the entries. If an element occurs multiple times in the
+; array then the later occurences are discarded.
+(define (distinct input)
+  (~>>
+   (fold (fn (state x) (if (Map.contains-key x state) state (Map.add x 1 state))) (Map.empty) input)
+   (Map.keys)
+   (List.to-array)))
 
 ; TODO: array-distinct-by
 
@@ -229,13 +237,13 @@
   ;          (compare-with (fn (x y) (if (= x y) 0 1)) ((vector 1 2 3 4) (vector 1 2 3 4)))
   ;          0)
 
-  (define count-by-results (count-by (fn (x) x) #(1 1 1)))
-
   (test-equal? "Count-by works" (count-by (fn (x) x) #(1 1 1)) #((1 3)))
 
   (test-equal? "Count-by more complicated."
                (count-by (fn (x) x) #(1 1 1 1 3 3 3 3 2 2 2 0))
                #((0 1) (1 4) (2 3) (3 4)))
+
+  (test-equal? "Distinct works" (distinct #(1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4)) #(1 2 3 4))
 
   (test-equal? "Copy-to works correctly"
                old-array
