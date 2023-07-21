@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "../globals.rkt"
+         (prefix-in Map. "map.rkt")
          racket/vector
          threading)
 
@@ -45,12 +46,12 @@
 ; For each element of the array, applies the given function. Concatenates all the results and
 ; return the combined array.
 
-; TODO: compare-with
+; TODO: Finish compare-with.
 ; Compares two arrays using the givern comparison function, element by element.
 (define (compare-with comparer array-one array-two)
   (for ([index (in-range 0 (length array-one))])
-    (cond
-      [(comparer array-one array-two)])))
+    #:break (not (= (comparer (get index array-one) (get index array-two))))
+    1))
 
 ; TODO: concat - may not need this, this is to take Seqs of arrays and concat them into one.
 
@@ -69,10 +70,22 @@
 (define (copy-to in-array out-array)
   (array-blit out-array 0 in-array 0 (length out-array)))
 
-; TODO: array-count-by
-
 (define (create count init-value)
   (make-vector count init-value))
+
+; Applies a key-generating function to each element of an array and returns an array
+; yielding unique keys and their number of occurrences in the original array.
+; Fold over a map, increment the value everytime the key is found again. Then return the map
+; as an array.
+(define (count-by projection input)
+  (~>> (fold (fn (state x)
+                 (define key (projection x))
+                 (if (Map.contains-key key state)
+                     (Map.change key (+ (Map.get key state) 1) state)
+                     (Map.add key 1 state)))
+             (Map.empty)
+             input)
+       (Map.to-array)))
 
 ; TODO: array-distinct - just a hashmap or set if they have it.
 
@@ -207,10 +220,22 @@
                (chunk-by-size 2 (vector 1 2 3 4))
                (vector (vector 1 2) (vector 2 3) (vector 3 4)))
 
-  (test-true "Contains test should resolve to true.." (contains -100 (vector 1 2 3 4 100 23 -100)))
+  (test-true "Contains test should resolve to true." (contains -100 (vector 1 2 3 4 100 23 -100)))
 
   (test-false "Contains test should resolve to false."
               (contains "blue" (vector "red" "yellow" "green")))
+
+  ;(test-eq? "Compare-with all are equal."
+  ;          (compare-with (fn (x y) (if (= x y) 0 1)) ((vector 1 2 3 4) (vector 1 2 3 4)))
+  ;          0)
+
+  (define count-by-results (count-by (fn (x) x) #(1 1 1)))
+
+  (test-equal? "Count-by works" (count-by (fn (x) x) #(1 1 1)) #((1 3)))
+
+  (test-equal? "Count-by more complicated."
+               (count-by (fn (x) x) #(1 1 1 1 3 3 3 3 2 2 2 0))
+               #((0 1) (1 4) (2 3) (3 4)))
 
   (test-equal? "Copy-to works correctly"
                old-array
