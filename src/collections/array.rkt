@@ -18,7 +18,6 @@
 ; Builds a new array that contains the elements of the first
 ; array followed by the elements of the second.
 (define (append array-one array-two)
-
   (vector-append array-one array-two))
 
 ; Returns the average of the elements of the array.
@@ -33,7 +32,7 @@
   (average mapped-values))
 
 ; Reads a range of elements from the first array and write them into the second.
-(define (array-blit dest dest-start src [src-start 0] [src-end (length src)])
+(define (blit dest dest-start src [src-start 0] [src-end (length src)])
   (vector-copy! dest dest-start src src-start src-end))
 
 ; TODO: choose - May only need to be used for typed racket where we have an option type.
@@ -68,7 +67,7 @@
 ; Builds a new array that contains the elements of the array given.
 (define (copy input)
   (define new-array (create (length input) (get input 0)))
-  (array-blit new-array 0 input)
+  (blit new-array 0 input)
   new-array)
 
 ; Applies a key-generating function to each element of an array and returns an array
@@ -195,6 +194,51 @@
       [(= index (length array)) state]
       [else (loop (+ 1 index) folder (folder state (get array index)) array)])))
 
+; Applies a function to pairs of elements drawn from teh two collections, left-to-right,
+; threading an acumlator argument through the computation. The two input array's must have the
+; same length.
+(define (fold-two folder state array-one array-two)
+  (if (not (= (length array-one) (length array-two)))
+      #f
+      (let loop ([index 0] [folder folder] [state state] [array-one array-one] [array-two array-two])
+        (cond
+          [(= index (length array-one)) state]
+          [else
+           (loop (+ 1 index)
+                 folder
+                 (folder state (get array-one index) (get array-two index))
+                 array-one
+                 array-two)]))))
+
+; Applies a function to each element of the array, starting from the end, threading
+; an accumulator argument through the computation. If the input function is f and the elements
+; are i0...iN then computes f i0 (...(f iN s))
+(define (fold-back folder state input)
+  (let loop ([index (- (length input) 1)] [folder folder] [state state] [input input])
+    (cond
+      [(< index 0) state]
+      [else (loop (- index 1) folder (folder state (get input index)) input)])))
+
+; Apply a function to pairs of elements drawn from the two collections, right-to-left,
+; threading an accumulator argument through the computation. The two input arrays must
+; have the same lengths, otherwise false.
+(define (fold-back-two folder state array-one array-two)
+  (if (not (= (length array-one) (length array-two)))
+      #f
+      (let loop ([index (- (length array-one) 1)]
+                 [folder folder]
+                 [state state]
+                 [array-one array-one]
+                 [array-two array-two])
+        (cond
+          [(< index 0) state]
+          [else
+           (loop (- index 1)
+                 folder
+                 (folder state (get array-one index) (get array-two index))
+                 array-one
+                 array-two)]))))
+
 ; Tests if all elements of hte array satisfy the given predicate.
 (define (for-all predicate array)
   (let loop ([index 0] [predicate predicate] [array array])
@@ -244,9 +288,17 @@
   (for/vector ([index (in-range 0 count)])
     (initializer index)))
 
-; TODO: insert-at
+; TODO: This is not working.
+; Return a new array with a new item inserted before the given index.
+(define (insert-at-broken index value source)
+  (define first (List.head (split-at index source)))
+  (define end (List.last (split-at index source)))
+  (vector (vector->values (vector->values first) value (vector->values end))))
 
-; TODO: insert-many-at
+; TODO: Implement.
+; Return a new array with new items inserted before the given index.
+(define (insert-many-at index values rouce)
+  0)
 
 ; Returns true if the given array is empty, otherwise false.
 (define (is-empty array)
@@ -275,9 +327,22 @@
   (vector-length array))
 
 ;Builds a new array whose elements are the results of applying the given function to each of the elements to the array.
-(define (map mapper array)
-  (for/vector ([item array])
+(define (map mapper input)
+  (for/vector ([item input])
     (mapper item)))
+
+; Builds a new array whose elements are the results of applying the given
+; function to the corresonding elements of the two collectin pairwise.
+; If the two-arrays are different lengths, return false.
+(define (map-two mapper array-one array-two)
+  (if (or (= 0 (length array-one)) (= 0 (length array-two)))
+      #f
+      (let loop ([index 0] [mapper mapper] [array-one array-one] [array-two array-two])
+        (cond
+          [(= index (length array-one)) #()]
+          [else
+           (append (vector (mapper (get array-one index) (get array-two index)))
+                   (loop (+ index 1) mapper array-one array-two))]))))
 
 ; Sets an element of an array.
 (define (set array index value)
@@ -285,6 +350,10 @@
 
 (define (skip size array)
   (vector-drop array size))
+
+; Splits an array into two arrays, at the given index.
+(define (split-at index input)
+  (list (take index input) (~>> (skip index input) (take (- (length input) index)))))
 
 (define (sum array)
   (fold (fn (acc item) (+ acc item)) 0 array))
@@ -381,6 +450,36 @@
             (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
             10)
 
+  (test-eq? "Fold-two test, arrays should add up to 20"
+            (fold-two (fn (acc item-one item-two) (+ acc item-one item-two))
+                      0
+                      (vector 1 2 3 4)
+                      (vector 1 2 3 4))
+            20)
+
+  (test-false "Fold-two-test false, two arrays are different lengths."
+              (fold-two (fn (acc item-one item-two) (+ acc item-one item-two))
+                        0
+                        (vector 1 2 3)
+                        (vector 1 2 3 4)))
+
+  (test-equal? "Fold back works correctly."
+               (fold-back (fn (acc item) (- item acc)) 1 (vector 1 2 3))
+               1)
+
+  (test-false "Fold-two-back-test false, two arrays are different lengths."
+              (fold-back-two (fn (acc item-one item-two) (+ acc item-one item-two))
+                             0
+                             (vector 1 2 3)
+                             (vector 1 2 3 4)))
+
+  (test-eq? "Fold-two test, arrays should add up to 20"
+            (fold-back-two (fn (acc item-one item-two) (+ acc item-one item-two))
+                           0
+                           (vector 1 2 3 4)
+                           (vector 1 2 3 4))
+            20)
+
   (test-equal? "Filter takes any item equal to one."
                (filter (fn (item) (= item 1)) (vector 1 1 1 2 2 2))
                (vector 1 1 1))
@@ -414,6 +513,12 @@
 
   (test-equal? "Indexed works correctly." (indexed #(1 2 3 4)) #((0 1) (1 2) (2 3) (3 4)))
 
+  (test-equal? "Map-two works correctly."
+               (map-two (fn (x y) (+ x y)) #(1 2 3 4) #(1 2 3 4))
+               #(2 4 6 8))
+
+  ;(test-equal? "Insert-at works." (insert-at 1 23 (vector 1 2 3 4)) (vector 1 23 2 3 4))
+
   (test-equal? "Mapping over an array works correctly, simple addition."
                (map (fn (item) (add1 item)) (vector 1 2 3 4))
                (vector 2 3 4 5))
@@ -431,4 +536,10 @@
 
   (test-false "The array is not empty." (is-empty (vector 1)))
 
-  (test-eq? "The last item in the array is 4." (last (vector 1 2 3 4)) 4))
+  (test-eq? "The last item in the array is 4." (last (vector 1 2 3 4)) 4)
+
+  (test-equal? "Split-at works correctly." (split-at 2 (vector 1 2 3 4 5)) (list #(1 2) #(3 4 5)))
+
+  (test-equal? "Split-at complicated." (split-at 1 (vector 1 2 3 4 5)) (list #(1) #(2 3 4 5)))
+
+  (test-equal? "Split-at at the end." (split-at 4 (vector 1 2 3 4 5)) (list #(1 2 3 4) #(5))))
