@@ -168,6 +168,24 @@
       [(predicate (get input index)) (get input index)]
       [else (loop (- index 1) predicate input)])))
 
+; Returns the index of the first element in the array that satisifes the given predicate.
+; If the element doesn't exist, return false.
+(define (find-index predicate input)
+  (let loop ([index 0] [predicate predicate] [input input])
+    (cond
+      [(= index (length input)) #f]
+      [(predicate (get input index)) index]
+      [else (loop (+ index 1) predicate input)])))
+
+; Returns the index of the last element in the array that satisfies the given predicate.
+; If the element doesn't exist, return false.
+(define (find-index-back predicate input)
+  (let loop ([index (- (length input) 1)] [predicate predicate] [input input])
+    (cond
+      [(< index 0) #f]
+      [(predicate (get input index)) index]
+      [else (loop (- index 1) predicate input)])))
+
 ; Applies a function to each element of the collection, threading an accumulator
 ; argument through the computation. If the input function is f and the elements are
 ; i0..iN then computes f(...(f s i0)...) iN.
@@ -177,12 +195,7 @@
       [(= index (length array)) state]
       [else (loop (+ 1 index) folder (folder state (get array index)) array)])))
 
-; TODO: fold-two
-
-; TODO: fold-back
-
-; TODO: fold-back-two
-
+; Tests if all elements of hte array satisfy the given predicate.
 (define (for-all predicate array)
   (let loop ([index 0] [predicate predicate] [array array])
     (cond
@@ -190,7 +203,13 @@
       [(not (predicate (get array index))) #f]
       [else (loop (+ index 1) predicate array)])))
 
-; TODO: for-all-two
+; Tests if all corresponding elements of the array satisfy the given predicate pairwise.
+(define (for-all-two predicate array-one array-two)
+  (let loop ([index 0] [predicate predicate] [array-one array-one] [array-two array-two])
+    (cond
+      [(= index (length array-one)) #t]
+      [(not (predicate (get array-one index) (get array-two index))) #f]
+      [else (loop (+ 1 index) predicate array-one array-two)])))
 
 ; Gets an element of an array.
 (define (get input index)
@@ -348,6 +367,16 @@
   (test-false "Find-back works and returns false because the element isn't found."
               (find-back (fn (x) (= x 1)) (vector 4 4 4 4)))
 
+  (test-equal? "Find-index works." (find-index (fn (x) (= x 1)) (vector 4 2 1 3)) 2)
+
+  (test-false "Find-index returns false because the element doesn't exist."
+              (find-index (fn (x) (= x 1)) (vector 4 4 4 4)))
+
+  (test-equal? "Find-index-back works." (find-index-back (fn (x) (= x 2)) (vector 1 2 3 4)) 1)
+
+  (test-false "Find-index-back returns false because the element doesn't exist."
+              (find-index-back (fn (x) (= x 1)) (vector 4 4 4 4)))
+
   (test-eq? "Fold test, array should add up to 10."
             (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
             10)
@@ -365,6 +394,12 @@
 
   (test-false "For-all returns false because no items match."
               (for-all (fn (item) (> item 2)) (vector 1 2 3 4 5)))
+
+  (test-true "For-all-two returns true."
+             (for-all-two (fn (x y) (= (+ x y) 5)) (vector 2 2 2 2 2) (vector 3 3 3 3 3)))
+
+  (test-false "For-all-two returns false."
+              (for-all-two (fn (x y) (> x y)) (vector 1 2 3) (vector 3 4 5)))
 
   (test-eq? "Getting the first element returns 1." (get (vector 1 2 3 4) 0) 1)
 
