@@ -182,8 +182,15 @@
 
 ; Applies a key-generating function to each element of an array and yields an array
 ; of unique keys. Each unique key contains an array of all elements that match that key.
-(define (group-by projection array)
-  0)
+(define (group-by projection input)
+  (~>> (fold (fn (state x)
+                 (define key (projection x))
+                 (if (Map.contains-key key state)
+                     (Map.change key (append (Map.get key state) (vector x)) state)
+                     (Map.add key (get input x) state)))
+             (Map.empty)
+             input)
+       (Map.to-array)))
 
 (define (head input)
   (get input 0))
