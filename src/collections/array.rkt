@@ -189,11 +189,11 @@
   (for/vector ([index (in-range 0 count)])
     (initializer index)))
 
-; TODO: array-insert-at
+; TODO: insert-at
 
-; TODO: array-insert-many-at
+; TODO: insert-many-at
 
-; TODO: array-is-empty?
+; Returns true if the given array is empty, otherwise false.
 (define (is-empty array)
   (= (length array) 0))
 

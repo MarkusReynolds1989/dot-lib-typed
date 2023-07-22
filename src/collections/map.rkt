@@ -51,7 +51,7 @@
 (define (to-array table)
   (List.to-array (hash-map table (fn (key value) (list key value)))))
 
-(define (values table)
+(define (get-values table)
   (hash-values table))
 
 (provide (all-defined-out)
