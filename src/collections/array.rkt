@@ -12,7 +12,7 @@
   (define result (empty))
 
   (for ([index (in-range 0 (length array-one))])
-    (set! result (append result (vector (list (get index array-one) (get index array-two))))))
+    (set! result (append result (vector (list (get array-one index) (get array-two index))))))
   result)
 
 ; Builds a new array that contains the elements of the first
@@ -55,23 +55,23 @@
 ; Compares two arrays using the givern comparison function, element by element.
 (define (compare-with comparer array-one array-two)
   (for ([index (in-range 0 (length array-one))])
-    #:break (not (= (comparer (get index array-one) (get index array-two))))
+    #:break (not (= (comparer (get array-one index) (get array-two index))))
     1))
 
 ; TODO: concat - may not need this, this is to take Seqs of arrays and concat them into one.
 
 ; Tests if the array contains the specified element.
-(define (contains value array)
+(define (contains value input)
   (define result #f)
-  (for ([index (in-range 0 (length array))])
-    (when (equal? value (get index array))
+  (for ([index (in-range 0 (length input))])
+    (when (equal? value (get input index))
       (set! result #t)))
   result)
 
 ; Builds a new array that contains the elements of the array given.
-(define (copy array)
-  (define new-array (create (length array) (get 0 array)))
-  (array-blit new-array 0 array)
+(define (copy input)
+  (define new-array (create (length input) (get input 0)))
+  (array-blit new-array 0 input)
   new-array)
 
 ; Applies a key-generating function to each element of an array and returns an array
@@ -114,7 +114,7 @@
 
 ; Returns the only element of an array.
 (define (exactly-one array)
-  (and (= (length array) 1) (get 0 array)))
+  (and (= (length array) 1) (get array 0)))
 
 ; TODO: except - Come back to this after sequence is ready.
 ; Returns a new list with the distinct elements of the input array with do not appear
@@ -122,17 +122,17 @@
 
 ; Tests if any element of the array satisfies the given predicate.
 (define (exists predicate array)
-  (define result #f)
-  (for ([i (in-range 0 (length array))])
-    (when (predicate (get i array))
-      (set! result #t)))
-  result)
+  (let loop ([low-pointer 0] [high-pointer (- (length array) 1)] [predicate predicate] [array array])
+    (cond
+      [(= high-pointer low-pointer) #f]
+      [(or (predicate (get array low-pointer)) (predicate (get array high-pointer))) #t]
+      [else (loop (+ 1 low-pointer) (- high-pointer 1) predicate array)])))
 
 ; Tests if any pair of corresponding elements of the arrays satisifes the given predicate.
 (define (exists-two predicate array-one array-two)
   (define result #f)
   (for ([index (in-range 0 (length array-one))])
-    (when (predicate (get index array-one) (get index array-two))
+    (when (predicate (get array-one index) (get array-two index))
       (set! result #t)))
   result)
 
@@ -145,7 +145,7 @@
 ; predicate returns "true".
 (define (filter predicate input)
   (fold (fn (acc item) (if (predicate item) (append (vector item) acc) acc))
-        (create 0 (get 0 input))
+        (create 0 (get input 0))
         input))
 
 ; Applies a function to each element of the collection, threading an accumulator
@@ -155,7 +155,7 @@
   (let loop ([index 0] [folder folder] [state state] [array input])
     (cond
       [(= index (length array)) state]
-      [else (loop (+ 1 index) folder (folder state (get index array)) array)])))
+      [else (loop (+ 1 index) folder (folder state (get array index)) array)])))
 
 ; TODO: fold-two
 
@@ -167,22 +167,30 @@
   (let loop ([index 0] [predicate predicate] [array array])
     (cond
       [(= index (length array)) #t]
-      [(not (predicate (get index array))) #f]
+      [(not (predicate (get array index))) #f]
       [else (loop (+ index 1) predicate array)])))
 
-; TODO: array-for-all-two
+; TODO: for-all-two
 
 ; Gets an element of an array.
-(define (get index array)
-  (vector-ref array index))
+(define (get input index)
+  (vector-ref input index))
 
 ; Applies a key-generating function to each element of an array and yields an array
 ; of unique keys. Each unique key contains an array of all elements that match that key.
 (define (group-by projection array)
   0)
 
-(define (head array)
-  (get 0 array))
+(define (head input)
+  (get input 0))
+
+; Builds a new array whose elements are the corresponding elements of the input array
+; paired with the integer index (from 0) of each element.
+(define (indexed input)
+  (let loop ([index 0] [input input])
+    (cond
+      [(= index (length input)) #()]
+      [else (append (vector (list index (get input index))) (loop (+ 1 index) input))])))
 
 (define (init count
               initializer)
@@ -199,22 +207,22 @@
 
 (define (iter action array)
   (for ([index (in-range 0 (length array))])
-    (action (get index array))))
+    (action (get array index))))
 
 (define (iter-two action array-one array-two)
   (for ([index (in-range 0 (length array-one))])
-    (action (get index array-one) (get index array-two))))
+    (action (get array-one index) (get array-two index))))
 
 (define (iter-index action array)
   (for ([index (in-range 0 (length array))])
-    (action index (get index array))))
+    (action index (get array index))))
 
 (define (iter-index-two action array-one array-two)
   (for ([index (in-range 0 (length array-one))])
-    (action index (get index array-one) (get index array-two))))
+    (action index (get array-one index) (get array-two index))))
 
 (define (last array)
-  (get (- (length array) 1) array))
+  (get array (- (length array) 1)))
 
 (define (length array)
   (vector-length array))
@@ -316,7 +324,9 @@
   (test-false "For-all returns false because no items match."
               (for-all (fn (item) (> item 2)) (vector 1 2 3 4 5)))
 
-  (test-eq? "Getting the first element returns 1." (get 0 (vector 1 2 3 4)) 1)
+  (test-eq? "Getting the first element returns 1." (get (vector 1 2 3 4) 0) 1)
+
+  (test-equal? "Indexed works correctly." (indexed #(1 2 3 4)) #((0 1) (1 2) (2 3) (3 4)))
 
   (test-equal? "Mapping over an array works correctly, simple addition."
                (map (fn (item) (add1 item)) (vector 1 2 3 4))
