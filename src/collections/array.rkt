@@ -42,31 +42,28 @@
 
 ; Divides the input array into chunks of size at most chunk-size.
 (define (chunk-by-size chunk-size input)
-  (define result (empty))
-  (for ([index (in-range 0 (- (+ (length input) 1) chunk-size))])
-    (set! result (append result (vector (~>> (skip index input) (take chunk-size))))))
-  result)
+  (let loop ([index 0] [chunk-size chunk-size] [input input])
+    (cond
+      [(= index (- (+ (length input) 1) chunk-size)) #()]
+      [(append (vector (~>> (skip index input) (take chunk-size)))
+               (loop (+ index 1) chunk-size input))])))
 
 ; TODO: collect - implement map and concat
 ; For each element of the array, applies the given function. Concatenates all the results and
 ; return the combined array.
 
-; TODO: Finish compare-with.
+; TODO: compare-with
 ; Compares two arrays using the givern comparison function, element by element.
-(define (compare-with comparer array-one array-two)
-  (for ([index (in-range 0 (length array-one))])
-    #:break (not (= (comparer (get array-one index) (get array-two index))))
-    1))
 
 ; TODO: concat - may not need this, this is to take Seqs of arrays and concat them into one.
 
 ; Tests if the array contains the specified element.
 (define (contains value input)
-  (define result #f)
-  (for ([index (in-range 0 (length input))])
-    (when (equal? value (get input index))
-      (set! result #t)))
-  result)
+  (let loop ([index 0] [value value] [input input])
+    (cond
+      [(= index (length input)) #f]
+      [(equal? (get input index) value) #t]
+      [else (loop (+ 1 index) value input)])))
 
 ; Builds a new array that contains the elements of the array given.
 (define (copy input)
@@ -122,19 +119,26 @@
 
 ; Tests if any element of the array satisfies the given predicate.
 (define (exists predicate array)
-  (let loop ([low-pointer 0] [high-pointer (- (length array) 1)] [predicate predicate] [array array])
-    (cond
-      [(= high-pointer low-pointer) #f]
-      [(or (predicate (get array low-pointer)) (predicate (get array high-pointer))) #t]
-      [else (loop (+ 1 low-pointer) (- high-pointer 1) predicate array)])))
+  (cond
+    [(= (length array) 0) #f]
+    [(= (length array) 1) (predicate (get array 0))]
+    [(> (length array) 1)
+     (let loop ([low-pointer 0]
+                [high-pointer (- (length array) 1)]
+                [predicate predicate]
+                [array array])
+       (cond
+         [(= high-pointer low-pointer) #f]
+         [(or (predicate (get array low-pointer)) (predicate (get array high-pointer))) #t]
+         [else (loop (+ 1 low-pointer) (- high-pointer 1) predicate array)]))]))
 
 ; Tests if any pair of corresponding elements of the arrays satisifes the given predicate.
 (define (exists-two predicate array-one array-two)
-  (define result #f)
-  (for ([index (in-range 0 (length array-one))])
-    (when (predicate (get array-one index) (get array-two index))
-      (set! result #t)))
-  result)
+  (let loop ([index 0] [predicate predicate] [array-one array-one] [array-two array-two])
+    (cond
+      [(= index (length array-one)) #f]
+      [(predicate (get array-one index) (get array-two index))]
+      [else (loop (+ index 1) predicate array-one array-two)])))
 
 ; Fills a range of elements of the array with the given value.
 (define (fill target target-index count value)
@@ -298,6 +302,10 @@
 
   (test-false "Exists test, blue is not in the array."
               (exists (fn (item) (equal? item "blue")) (vector "red" "yellow" "green")))
+
+  (test-false "Exists returns false, empty array." (exists (fn (x) (= x 1)) #()))
+
+  (test-true "Exists returns true, one element." (exists (fn (x) (= x 1)) #(1)))
 
   (test-true "Exists-two works correctly." (exists-two (fn (x y) (= x y)) #(1 2 3 4) #(2 3 6 4)))
 
