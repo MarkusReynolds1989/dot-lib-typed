@@ -1,6 +1,8 @@
 # dot-lib
 
-[![Build Actions Status](https://github.com/{markusreynolds1989}/{dot-lib}/workflows/{CI}/badge.svg)](https://github.com/{markusreynolds1989}/{dot-lib}/CI)
+[![Build Actions Status]
+(https://github.com/markusreynolds1989/dot-lib/workflows/CI/badge.svg)]
+(https://github.com/markusreynolds1989/dot-lib/actions)
 
 A project to take the standard library from .net, especially F#, and port it to Racket so it's easier to work with.
 
