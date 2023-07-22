@@ -1,4 +1,7 @@
 # dot-lib
+
+[![Build Actions Status](https://github.com/{markusreynolds1989}/{dot-lib}/workflows/{CI}/badge.svg)](https://github.com/{markusreynolds1989}/{dot-lib}/CI)
+
 A project to take the standard library from .net, especially F#, and port it to Racket so it's easier to work with.
 
 1. Racket is very fun and powerful to use, it's dynamically typed and interpreted so better for things like scripting or just for quick work.
