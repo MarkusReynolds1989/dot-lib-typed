@@ -152,6 +152,22 @@
         (create 0 (get input 0))
         input))
 
+; Returns the first element for which the given function returns 'true', else false.
+(define (find predicate input)
+  (let loop ([index 0] [predicate predicate] [input input])
+    (cond
+      [(= index (length input)) #f]
+      [(predicate (get input index)) (get input index)]
+      [else (loop (+ 1 index) predicate input)])))
+
+; Returns the last element for which the given function returns 'true', else false.
+(define (find-back predicate input)
+  (let loop ([index (- (length input) 1)] [predicate predicate] [input input])
+    (cond
+      [(< index 0) #f]
+      [(predicate (get input index)) (get input index)]
+      [else (loop (- index 1) predicate input)])))
+
 ; Applies a function to each element of the collection, threading an accumulator
 ; argument through the computation. If the input function is f and the elements are
 ; i0..iN then computes f(...(f s i0)...) iN.
@@ -321,6 +337,16 @@
     (define filled (vector 1 2 3 4))
     (fill filled 1 2 3)
     (check-equal? filled #(1 3 3 4)))
+
+  (test-equal? "Find works and finds the value." (find (fn (x) (= x 1)) (vector 4 3 2 1)) 1)
+
+  (test-false "Find works and returns false because it doesn't have the element."
+              (find (fn (x) (= x 1)) (vector 4 4 4 4)))
+
+  (test-equal? "Find-back works and finds the value." (find-back (fn (x) (= x 1)) (vector 1 2 3 4)) 1)
+
+  (test-false "Find-back works and returns false because the element isn't found."
+              (find-back (fn (x) (= x 1)) (vector 4 4 4 4)))
 
   (test-eq? "Fold test, array should add up to 10."
             (fold (fn (acc item) (+ acc item)) 0 (vector 1 2 3 4))
