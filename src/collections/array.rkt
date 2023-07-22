@@ -182,6 +182,7 @@
 
 ; Applies a key-generating function to each element of an array and yields an array
 ; of unique keys. Each unique key contains an array of all elements that match that key.
+; TODO: Fix this function.
 (define (group-by projection input)
   (~>> (fold (fn (state x)
                  (define key (projection x))
@@ -340,6 +341,15 @@
               (for-all (fn (item) (> item 2)) (vector 1 2 3 4 5)))
 
   (test-eq? "Getting the first element returns 1." (get (vector 1 2 3 4) 0) 1)
+
+  #| (test-case "Group-by works."
+    (define start-array
+      (vector '("john" 23) '("john" 18) '("tim" 5) '("henry" 22) '("henry" 57) '("henry" 100)))
+    (define (names tuple)
+      (List.head tuple))
+    (define target-array
+      (vector '("john" (vector 23 18)) '("tim" (vector 5)) '("henry" (vector 22 57 100))))
+    (check-equal? (group-by names start-array) target-array)) |#
 
   (test-equal? "Indexed works correctly." (indexed #(1 2 3 4)) #((0 1) (1 2) (2 3) (3 4)))
 
