@@ -375,15 +375,36 @@
       [(= index (length input)) #()]
       [(append (vector (mapper index (get input index))) (loop (+ index 1) mapper input))])))
 
-; map-i-two
+; Builds a new collection whose elements are the results of applying the given
+; function to the corresponding elements of the two collections pairwise, also passing
+; the index of the elements.
+(define (map-i-two mapper array-one array-two)
+  (let loop ([index 0] [mapper mapper] [array-one array-one] [array-two array-two])
+    (cond
+      [(= index (length array-one)) #()]
+      [(append (vector (mapper index (get array-one index) (get array-two index)))
+               (loop (+ index 1) mapper array-one array-two))])))
 
-; max
+; TODO: Make this to where I can figure out the value before.
+; Returns the greatest of all elements of the array.
+(define (max input)
+  (fold (fn (state x) (if (> x state) x state)) min-int input))
 
-; max-by
+; TODO: See above, need to figure out the min value before hand.
+; Returns the greatest of all the elements of the array by the given projection.
+(define (max-by projection input)
+  (fold (fn (state x) (if (> (projection x) state) x state)) min-int input))
 
-; min
+; TODO: See above, need to figure out the min value before hand.
+; Returns the least of all the elements of the array by the given projection.
+(define (min input)
+  (fold (fn (state x) (if (< x state) x state)) max-int input))
 
-; min-by
+; TODO: See above, need to figure out the min value before hand.
+; Returns the least of all the elements of the array by the given projection.
+(define (min-by projection input)
+  (fold (fn (state x) (if (< (projection x) state) x state)) max-int input))
+
 ; Sets an element of an array.
 (define (set array index value)
   (vector-set! array index value))
@@ -572,6 +593,18 @@
                (vector 3 3 5))
 
   (test-equal? "Map-i works." (map-i (fn (x y) (+ x y)) (vector 1 2 3 4)) #(1 3 5 7))
+
+  (test-equal? "Map-i-two works."
+               (map-i-two (fn (x y z) (+ x y z)) (vector 1 2 3 4) (vector 1 2 3 4))
+               #(2 5 8 11))
+
+  (test-eq? "Max works." (max (vector 4 2 3 1)) 4)
+
+  (test-eq? "Max-by works." (max-by (fn (x) x) (vector 4 2 3 1)) 4)
+
+  (test-eq? "Min works." (min (vector 1 3 2 4)) 1)
+
+  (test-eq? "Min-by works." (min-by (fn (x) x) (vector 1 3 2 4)) 1)
 
   (test-equal? "Initializing an array works correctly."
                (init 3
