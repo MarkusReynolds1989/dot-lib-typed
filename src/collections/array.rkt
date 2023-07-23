@@ -344,6 +344,46 @@
            (append (vector (mapper (get array-one index) (get array-two index)))
                    (loop (+ index 1) mapper array-one array-two))]))))
 
+; Builds a new collection whose elements are the results of applying the given function
+; to the corresponding elements of the two collections pariwise. The two input
+; arrays must have the same lengths else false.
+(define (map-three mapper array-one array-two array-three)
+  (if (or (= 0 (length array-one) (length array-two) (length array-three)))
+      #f
+      (let loop ([index 0]
+                 [mapper mapper]
+                 [array-one array-one]
+                 [array-two array-two]
+                 [array-three array-three])
+        (cond
+          [(= index (length array-one)) #()]
+          [else
+           (append
+            (vector (mapper (get array-one index) (get array-two index) (get array-three index)))
+            (loop (+ index 1) mapper array-one array-two array-three))]))))
+
+; map-fold
+
+; map-fold-back
+
+; Builds a new array whose elements are the results of applying the given function to
+; each of the elements of the array. The integer index passed to the function idicates the index
+; of the element being transformed, starting at 0.
+(define (map-i mapper input)
+  (let loop ([index 0] [mapper mapper] [input input])
+    (cond
+      [(= index (length input)) #()]
+      [(append (vector (mapper index (get input index))) (loop (+ index 1) mapper input))])))
+
+; map-i-two
+
+; max
+
+; max-by
+
+; min
+
+; min-by
 ; Sets an element of an array.
 (define (set array index value)
   (vector-set! array index value))
@@ -517,6 +557,10 @@
                (map-two (fn (x y) (+ x y)) #(1 2 3 4) #(1 2 3 4))
                #(2 4 6 8))
 
+  (test-equal? "Map-three works correctly."
+               (map-three (fn (x y z) (+ x y z)) #(1 2 3 4) #(1 2 3 4) #(1 2 3 4))
+               #(3 6 9 12))
+
   ;(test-equal? "Insert-at works." (insert-at 1 23 (vector 1 2 3 4)) (vector 1 23 2 3 4))
 
   (test-equal? "Mapping over an array works correctly, simple addition."
@@ -526,6 +570,8 @@
   (test-equal? "Mapping over an array works correctly, length of strings."
                (map (fn (item) (string-length item)) (vector "one" "two" "three"))
                (vector 3 3 5))
+
+  (test-equal? "Map-i works." (map-i (fn (x y) (+ x y)) (vector 1 2 3 4)) #(1 3 5 7))
 
   (test-equal? "Initializing an array works correctly."
                (init 3
