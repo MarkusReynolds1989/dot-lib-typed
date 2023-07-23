@@ -1,4 +1,4 @@
-#lang racket/base
+#lang typed/racket/base/deep
 
 (require "../globals.rkt"
          (prefix-in Map. "map.rkt")
@@ -7,6 +7,7 @@
          threading)
 
 ; Returns a new array that contains all pairings of elements from the first and second arrays.
+(: all-pairs (All (T U) (-> (Vectorof T) (Vectorof U) (Vectorof (List T U)))))
 (define (all-pairs array-one array-two)
 
   (define result (empty))
@@ -17,6 +18,7 @@
 
 ; Builds a new array that contains the elements of the first
 ; array followed by the elements of the second.
+(: append (All (T) (-> (Vectorof T) (Vectorof T) (Vectorof T))))
 (define (append array-one array-two)
   (vector-append array-one array-two))
 
@@ -40,6 +42,7 @@
 ; comprised of the results x for each element where the function returns Some(x).
 
 ; Divides the input array into chunks of size at most chunk-size.
+(: chunk-by-size (All (T) (-> Number Number (Vectorof T) (Vectorof (Listof T)))))
 (define (chunk-by-size chunk-size input)
   (let loop ([index 0] [chunk-size chunk-size] [input input])
     (cond
@@ -420,7 +423,8 @@
 
 ; Splits teh collection into two collections, containing the elements for which the given
 ; predicate returns true and false respectively.
-(define (partition predicate input)0)
+(define (partition predicate input)
+  0)
 
 ; Sets an element of an array.
 (define (set array index value)
