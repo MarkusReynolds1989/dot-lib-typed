@@ -405,6 +405,23 @@
 (define (min-by projection input)
   (fold (fn (state x) (if (< (projection x) state) x state)) max-int input))
 
+; Builds an array from the given list.
+(define (of-list input)
+  (List.to-array input))
+
+; Returns an array of each element in the input array and it's predecessor, with the
+; exception of the first element which is only returned as the predecssor of the second element.
+(define (pairwise input)
+  (let loop ([index 0] [chunk-size 2] [input input])
+    (cond
+      [(= index (- (+ (length input) 1) chunk-size)) #()]
+      [(append (vector (~>> (skip index input) (take chunk-size) (List.of-array)))
+               (loop (+ index 1) chunk-size input))])))
+
+; Splits teh collection into two collections, containing the elements for which the given
+; predicate returns true and false respectively.
+(define (partition predicate input)0)
+
 ; Sets an element of an array.
 (define (set array index value)
   (vector-set! array index value))
@@ -605,6 +622,10 @@
   (test-eq? "Min works." (min (vector 1 3 2 4)) 1)
 
   (test-eq? "Min-by works." (min-by (fn (x) x) (vector 1 3 2 4)) 1)
+
+  (test-equal? "Of-list works." (of-list (list 1 2 3 4)) #(1 2 3 4))
+
+  (test-equal? "Pairwise works." (pairwise (vector 1 2 3 4)) #((1 2) (2 3) (3 4)))
 
   (test-equal? "Initializing an array works correctly."
                (init 3
