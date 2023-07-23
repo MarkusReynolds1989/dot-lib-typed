@@ -1,6 +1,6 @@
 # dot-lib
 
-[![Build Actions Status](https://github.com/markusreynolds1989/dot-lib/workflows/Build/badge.svg)](https://github.com/markusreynolds1989/dot-lib/actions)
+[![Build Actions Status](https://github.com/markusreynolds1989/dot-lib-typed/workflows/Build/badge.svg)](https://github.com/markusreynolds1989/dot-lib-typed/actions)
 
 A project to take the standard library from .net, especially F#, and port it to Racket so it's easier to work with.
 
@@ -10,4 +10,4 @@ A project to take the standard library from .net, especially F#, and port it to 
 
 
 ## This Version
-This is for regular untyped racket, basically this means increased interpreter speeds. If you need faster compiled speeds you should checkout dot-lib-typed when it's done.
+This is for typed racket, this should be faster code when compiled. For faster interpereted speed look at the dot-lib library.
