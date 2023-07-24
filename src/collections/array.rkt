@@ -18,7 +18,6 @@
 
 ; Builds a new array that contains the elements of the first
 ; array followed by the elements of the second.
-(: append (All (T) (-> (Vectorof T) (Vectorof T) (Vectorof T))))
 (define (append array-one array-two)
   (vector-append array-one array-two))
 

@@ -1,4 +1,4 @@
-#lang racket/base
+#lang typed/racket/base/deep
 
 (define-syntax-rule (fn args body ...)
   (lambda args
@@ -7,4 +7,6 @@
 (define min-int -217483648)
 (define max-int 217483648)
 
-(provide fn max-int min-int)
+(provide fn
+         max-int
+         min-int)
