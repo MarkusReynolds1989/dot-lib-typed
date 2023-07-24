@@ -40,7 +40,7 @@
 ; (define (count-by projection input)
 
 ; Returns an empty list of the given type.
-(: empty (All (T) (-> (Listof T))))
+(: empty (-> (Listof Nothing)))
 (define (empty)
   '())
 
@@ -56,6 +56,12 @@
     [(null? input) #f]
     [(predicate (car input)) #t]
     [else (exists predicate (cdr input))]))
+
+; Returns a new collection containing only the elements of the collection for which the
+; given predciate returns true.
+(: filter (All (T) (-> (-> T T Boolean) (Listof T) (Listof T) Boolean)))
+(define (filter predicate list-one list-two)
+  #f)
 
 (module+ test
   (require typed/rackunit)
