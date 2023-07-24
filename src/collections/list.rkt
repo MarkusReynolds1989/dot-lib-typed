@@ -59,9 +59,44 @@
 
 ; Returns a new collection containing only the elements of the collection for which the
 ; given predciate returns true.
-(: filter (All (T) (-> (-> T T Boolean) (Listof T) (Listof T) Boolean)))
-(define (filter predicate list-one list-two)
-  #f)
+(: filter (All (T) (-> (-> T Boolean) (Listof T) (Listof T))))
+(define (filter predicate input)
+  (cond
+    [(null? input) '()]
+    [(predicate (car input)) (cons (car input) (filter predicate (cdr input)))]
+    [else (filter predicate (cdr input))]))
+
+; Returns the first element for which the given function returns true otherwise, false.
+(: find (All (T) (-> (-> T Boolean) (Listof T) (U T False))))
+(define (find predicate input)
+  (cond
+    [(null? input) #f]
+    [(predicate (car input)) (car input)]
+    [else (find predicate (cdr input))]))
+
+(: find-index (All (T) (-> (-> T Boolean) (Listof T) (U Integer False))))
+(define (find-index predicate input)
+  (let loop ([index 0] [predicate predicate] [input input])
+    (cond
+      [(null? input) #f]
+      [(predicate (car input)) index]
+      [else (loop (+ index 1) predicate (cdr input))])))
+
+(: fold (All (T State) (-> (-> T State State) State (Listof T) State)))
+(define (fold folder state input)
+  (if (null? input) state (fold folder (folder (car input) state) (cdr input))))
+
+; Tests if all elemetns of the colleciton staisfy a given predicate.
+(: for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
+(define (for-all predicate list)
+  (if (contains #f (map predicate list)) #f #t))
+
+; Applies a key-generating function to each element of a list and yields
+; a list of unique keys. Each unique key contains a list of all elements that match
+; to this key.
+;(: group-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pairof Key (Listof T))))))
+;(define (group-by projection input)
+;  )
 
 (module+ test
   (require typed/rackunit)
@@ -87,4 +122,26 @@
   (test-true "Exists returns true." (exists (fn ([x : Integer]) (= x 1)) '(4 3 2 1)))
 
   (test-false "Exists returns false."
-              (exists (fn ([x : String]) (equal? x "One")) '("two" "three" "four"))))
+              (exists (fn ([x : String]) (equal? x "One")) '("two" "three" "four")))
+
+  (test-equal? "Filter works."
+               (filter (fn ([x : Integer]) (= (modulo x 2) 0)) '(1 2 3 4 5 6))
+               '(2 4 6))
+
+  (test-equal? "Find works, returns value."
+               (find (fn ([x : String]) (> (string-length x) 2)) '("1" "one"))
+               "one")
+
+  (test-false "Find works, returns false." (find (fn ([x : Integer]) (= 0 x)) '(1 2 3 4)))
+
+  (test-eq? "Find-index works, returns index."
+            (find-index (fn ([x : Integer]) (= 0 x)) '(1 2 0 3 4))
+            2)
+
+  (test-false "Find-index works, returns false." (find-index (fn ([x : Integer]) (= 0 x)) '(1 2 3 4)))
+
+  (test-eq? "Fold works." (fold (fn ([x : Integer] [state : Integer]) (+ x state)) 0 '(1 2 3 4)) 10)
+
+  (test-true "For-all returns true." (for-all (fn ([x : Integer]) (= x 1)) '(1 1 1 1)))
+
+  (test-false "For-all returns false." (for-all (fn ([x : Integer]) (= x 1)) '(1 2 3 4 5))))

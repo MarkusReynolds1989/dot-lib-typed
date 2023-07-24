@@ -1,35 +1,48 @@
-#lang racket/base
+#lang typed/racket/base/deep
 
 (require (prefix-in List. "../collections/list.rkt")
          "../globals.rkt")
 
+; Returns a new map witht eh binding added to the given map. If a binding with the given
+; key already exists in the input map, the existing binding is replaced by the new binding
+; in the result map.
+(: add (All (Key T) (-> Key T (HashTable Key T) (HashTable Key T))))
 (define (add key value table)
   (hash-set table key value))
 
+(: change (All (Key T) (-> Key T (HashTable Key T) (HashTable Key T))))
 (define (change key value table)
   (hash-set table key value))
 
+(: contains-key (All (Key T) (-> Key (HashTable Key T) Boolean)))
 (define (contains-key key table)
   (hash-has-key? table key))
 
+(: count (All (Key T) (-> (HashTable Key T) Integer)))
 (define (count table)
   (hash-count table))
 
+(: empty (-> (HashTable Nothing Nothing)))
 (define (empty)
   (hash))
 
+(: exists (All (Key T) (-> (-> (HashTable Key T) Boolean) (HashTable Key T) Boolean)))
 (define (exists predicate table)
   (> (count (filter predicate table)) 0))
 
+(: get (All (Key T) (-> Key (HashTable Key T) T)))
 (define (get key table)
   (hash-ref table key))
 
+(: keys (All (Key T) (-> (HashTable Key T) (Listof Key))))
 (define (keys table)
   (hash-keys table))
 
+(: map (All (Key T U) (-> (-> Key T U) (HashTable Key T) (HashTable Key U))))
 (define (map mapping table)
   (hash-map/copy table mapping))
 
+(: map-filter )
 (define (map-filter predicate acc pair)
   (if (predicate pair) (add (car pair) (cdr pair) acc) acc))
 
@@ -48,8 +61,8 @@
 (define (to-list table)
   (hash-map table (fn (key value) (list key value))))
 
-(define (to-array table)
-  (List.to-array (hash-map table (fn (key value) (list key value)))))
+;(define (to-array table)
+;  (List.to-array (hash-map table (fn (key value) (list key value)))))
 
 (define (get-values table)
   (hash-values table))
@@ -58,7 +71,7 @@
          (except-out map-filter))
 
 (module+ test
-  (require rackunit)
+  (require typed/rackunit)
   (define table (hash 1 "one"))
   (define add-table (hash "one" 1 "two" 2 "three" 3))
 
