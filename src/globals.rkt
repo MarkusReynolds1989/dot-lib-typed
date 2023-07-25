@@ -7,6 +7,10 @@
 (define min-int -217483648)
 (define max-int 217483648)
 
+(define-type (Maybe T) (U T False))
+;(define-type (Result T) (U T String))
+
 (provide fn
          max-int
-         min-int)
+         min-int
+         Maybe)
