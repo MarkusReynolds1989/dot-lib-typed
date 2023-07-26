@@ -66,12 +66,12 @@
   (hash-ref table key))
 
 ; Folds over the bindings in the map.
-(: fold (All (State Key T) (-> (-> State Key T State) State (HashTable Key T) State)))
-(define (fold folder init-state table)
-  (let loop ([index 0] [folder folder] [state init-state] [table table])
-    (cond
-      [(= index (count table)) state]
-      [#t (loop (+ index 1) folder (folder state (hash-iterate-pair table index)) table)])))
+;(: fold (All (State Key T) (-> (-> State Key T State) State (HashTable Key T) State)))
+;(define (fold folder init-state table)
+;  (let loop ([index 0] [folder folder] [state init-state] [table table])
+;    (cond
+;      [(= index (count table)) state]
+;      [#t (loop (+ index 1) folder (folder state (hash-iterate-pair table index)) table)])))
 
 (: to-list (All (Key T) (-> (HashTable Key T) (Listof (Pairof Key T)))))
 (define (to-list table)
