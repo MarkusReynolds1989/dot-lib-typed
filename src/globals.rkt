@@ -15,12 +15,4 @@
 (define-type (Maybe T) (U None (Some T)))
 ;(define-type (Result T) (U T String))
 
-(provide fn
-         max-int
-         min-int
-         Some
-         Some?
-         None
-         None?
-         Some-v
-         Maybe)
+(provide (all-defined-out))

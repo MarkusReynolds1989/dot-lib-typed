@@ -2,7 +2,6 @@
 
 (require "../globals.rkt"
          (prefix-in Map. "map.rkt")
-         (prefix-in List. "list.rkt")
          racket/vector
          threading)
 
@@ -76,15 +75,15 @@
 ; yielding unique keys and their number of occurrences in the original array.
 ; Fold over a map, increment the value everytime the key is found again. Then return the map
 ; as an array.
-(define (count-by projection input)
-  (~>> (fold (fn (state x)
-                 (define key (projection x))
-                 (if (Map.contains-key key state)
-                     (Map.change key (+ (Map.get key state) 1) state)
-                     (Map.add key 1 state)))
-             (Map.empty)
-             input)
-       (Map.to-array)))
+;(define (count-by projection input)
+;  (~>> (fold (fn (state x)
+;                 (define key (projection x))
+;                 (if (Map.contains-key key state)
+;                     (Map.change key (+ (Map.get key state) 1) state)
+;                     (Map.add key 1 state)))
+;             (Map.empty)
+;             input)
+;       (Map.to-array)))
 
 ; Creates an array whose elements are all initially the given value.
 (define (create count init-value)
@@ -93,18 +92,18 @@
 ; Returns an array that contains no duplicate entries according to generic hash and
 ; equality compairsons on the entries. If an element occurs multiple times in the
 ; array then the later occurences are discarded.
-(define (distinct input)
-  (~>>
-   (fold (fn (state x) (if (Map.contains-key x state) state (Map.add x 1 state))) (Map.empty) input)
-   (Map.keys)
-   (List.to-array)))
+; (define (distinct input)
+;  (~>>
+;   (fold (fn (state x) (if (Map.contains-key x state) state (Map.add x 1 state))) (Map.empty) input)
+;   (Map.keys)
+;   (List.to-array)))
 
 ; Returns an array that contains no duplicate entries according to the
 ; generic hash and comparisons on keys returned by the give key-generating function.
 ; If an element occurs multiple times in teh array then the later
 ; occurences are discarded.
-(define (distinct-by projection input)
-  (~>> input (map (fn (x) (projection x))) (distinct)))
+; (define (distinct-by projection input)
+;  (~>> input (map (fn (x) (projection x))) (distinct)))
 
 ; Returns an empty array.
 (define (empty)
@@ -264,15 +263,15 @@
 ; Applies a key-generating function to each element of an array and yields an array
 ; of unique keys. Each unique key contains an array of all elements that match that key.
 ; TODO: Fix this function.
-(define (group-by projection input)
-  (~>> (fold (fn (state x)
-                 (define key (projection x))
-                 (if (Map.contains-key key state)
-                     (Map.change key (append (Map.get key state) (vector x)) state)
-                     (Map.add key (get input x) state)))
-             (Map.empty)
-             input)
-       (Map.to-array)))
+;(define (group-by projection input)
+;  (~>> (fold (fn (state x)
+;                 (define key (projection x))
+;                 (if (Map.contains-key key state)
+;                     (Map.change key (append (Map.get key state) (vector x)) state)
+;                     (Map.add key (get input x) state)))
+;             (Map.empty)
+;             input)
+;       (Map.to-array)))
 
 (define (head input)
   (get input 0))
@@ -292,10 +291,10 @@
 
 ; TODO: This is not working.
 ; Return a new array with a new item inserted before the given index.
-(define (insert-at-broken index value source)
-  (define first (List.head (split-at index source)))
-  (define end (List.last (split-at index source)))
-  (vector (vector->values (vector->values first) value (vector->values end))))
+;(define (insert-at-broken index value source)
+;  (define first (List.head (split-at index source)))
+;  (define end (List.last (split-at index source)))
+;  (vector (vector->values (vector->values first) value (vector->values end))))
 
 ; TODO: Implement.
 ; Return a new array with new items inserted before the given index.
@@ -408,17 +407,17 @@
   (fold (fn (state x) (if (< (projection x) state) x state)) max-int input))
 
 ; Builds an array from the given list.
-(define (of-list input)
-  (List.to-array input))
+;(define (of-list input)
+;  (List.to-array input))
 
 ; Returns an array of each element in the input array and it's predecessor, with the
 ; exception of the first element which is only returned as the predecssor of the second element.
-(define (pairwise input)
-  (let loop ([index 0] [chunk-size 2] [input input])
-    (cond
-      [(= index (- (+ (length input) 1) chunk-size)) #()]
-      [(append (vector (~>> (skip index input) (take chunk-size) (List.of-array)))
-               (loop (+ index 1) chunk-size input))])))
+;(define (pairwise input)
+;  (let loop ([index 0] [chunk-size 2] [input input])
+;    (cond
+;      [(= index (- (+ (length input) 1) chunk-size)) #()]
+;      [(append (vector (~>> (skip index input) (take chunk-size) (List.of-array)))
+;               (loop (+ index 1) chunk-size input))])))
 
 ; Splits teh collection into two collections, containing the elements for which the given
 ; predicate returns true and false respectively.

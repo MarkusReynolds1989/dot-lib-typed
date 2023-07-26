@@ -105,10 +105,7 @@
 
   (test-equal? "Append works." (append '(1 2 3 4) '(1 2 3 4)) '(1 2 3 4 1 2 3 4))
 
-  (test-case "Average works."
-    (match (average '(3 3 3 3 6 6 6 6))
-      [(Some v) (check-equal? v 9/2)]
-      [None None]))
+  (test-equal? "Average works." (average '(3 3 3 3 6 6 6 6)) 9/2)
 
   (test-equal? "Average-by works."
                (average-by (fn ([x : String]) (string-length x)) '("one" "one" "two"))
