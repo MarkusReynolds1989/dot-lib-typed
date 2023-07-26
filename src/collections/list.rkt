@@ -5,13 +5,14 @@
          threading
          racket/match)
 
+; TODO: This functionality isn't right, we should be able to give lists of different
+; lengths.
 ; Returns a new list that contains all pairings of elements from two lists.
 (: all-pairs (All (T S) (-> (Listof T) (Listof S) (Listof (Tuple T S)))))
 (define (all-pairs list-one list-two)
   (if (null? list-one)
       '()
-      (append (list (Tuple (car list-one) (car list-two)))
-              (all-pairs (cdr list-one) (cdr list-two)))))
+      (cons (Tuple (car list-one) (car list-two)) (all-pairs (cdr list-one) (cdr list-two)))))
 
 ; Returns a new list that contains the elements of the first list followed by
 ; elements of the second list.
@@ -33,6 +34,17 @@
   (when (= 0 (length source))
     (error "List empty error."))
   (average (map projection source)))
+
+; Applies a function to each element in a list and then returns a list of values v where
+; the applied function erturns Some(v). Returns an emtpy list when the input list is empty
+; or when the applied chooser functionr returns None for all elements.
+(: choose (All (T S) (-> (-> T (Maybe S)) (Listof T) (Listof S))))
+(define (choose chooser input)
+  (cond
+    [(null? input) '()]
+    [(match (chooser (car input))
+       [(Some v) (cons v (choose chooser (cdr input)))])]
+    [else (choose chooser (cdr input))]))
 
 ; Tests if the list contains the specified element.
 (: contains (All (T) (-> T (Listof T) Boolean)))
@@ -71,6 +83,14 @@
     [(null? input) #f]
     [(predicate (car input)) #t]
     [else (exists predicate (cdr input))]))
+
+; Tests if any pair of corresponding elements of the lists satisifes the given predicate.
+(: exists-two (All (T S) (-> (-> T S Boolean) (Listof T) (Listof S) Boolean)))
+(define (exists-two predicate list-one list-two)
+  (cond
+    [(or (null? list-one) (null? list-two)) #f]
+    [(predicate (car list-one) (car list-two)) #t]
+    [else (exists-two predicate (cdr list-one) (cdr list-two))]))
 
 ; Returns a new collection containing only the elements of the collection for which the
 ; given predciate returns true.
@@ -140,6 +160,12 @@
 
   (test-false "Exists returns false."
               (exists (fn ([x : String]) (equal? x "One")) '("two" "three" "four")))
+
+  (test-true "Exists-two returns true."
+             (exists-two (fn ([x : Integer] [y : Integer]) (> (+ x y) 1)) '(0 0 0 1) '(0 0 0 1)))
+
+  (test-false "Exists-two returns false."
+              (exists-two (fn ([x : Integer] [y : Integer]) (> (+ x y) 1)) '(0 0 0 0) '(0 0 0 0)))
 
   (test-equal? "Filter works."
                (filter (fn ([x : Integer]) (= (modulo x 2) 0)) '(1 2 3 4 5 6))
