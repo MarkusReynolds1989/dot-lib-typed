@@ -7,10 +7,20 @@
 (define min-int -217483648)
 (define max-int 217483648)
 
-(define-type (Maybe T) (U T False))
+(struct (T S) Tuple ([First : T] [Second : S]) #:transparent)
+
+(struct None ())
+(struct (T) Some ([v : T]))
+
+(define-type (Maybe T) (U None (Some T)))
 ;(define-type (Result T) (U T String))
 
 (provide fn
          max-int
          min-int
+         Some
+         Some?
+         None
+         None?
+         Some-v
          Maybe)

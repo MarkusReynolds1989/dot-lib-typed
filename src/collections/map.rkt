@@ -1,9 +1,6 @@
 #lang racket/base
 
-(require (prefix-in List. "../collections/list.rkt")
-         "../globals.rkt")
-
-; Returns a new map witht eh binding added to the given map. If a binding with the given
+; Returns a new map witht the binding added to the given map. If a binding with the given
 ; key already exists in the input map, the existing binding is replaced by the new binding
 ; in the result map.
 ;(: add (All (Key T) (-> Key T (HashTable Key T) (HashTable Key T))))
