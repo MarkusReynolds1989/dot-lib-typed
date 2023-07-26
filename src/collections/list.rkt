@@ -2,6 +2,7 @@
 
 (require "../globals.rkt"
          (prefix-in Map. "map.rkt")
+         threading
          racket/match)
 
 ; Returns a new list that contains all pairings of elements from two lists.
@@ -41,10 +42,22 @@
     [(equal? (car source) value) #t]
     [else (contains value (cdr source))]))
 
+; TODO: The problem here is that if I just use tuples or something it's going to be very
+; slow to iterate the list, it would be better to have a Map.fold first
+; and use that.
+
 ; Applies a key-generating function to each element of a list and returns a list
 ; yielding unique keys and their number of occurances in the original list.
-; (: count-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pairof Key Integer)))))
-; (define (count-by projection input)
+;(: count-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pairof Key Integer)))))
+;(define (count-by projection input)
+;  (~>> (fold (fn ([x : T] [state : (HashTable Key T)])
+;                 (define key : Key (projection x))
+;                 (if (Map.contains-key key state)
+;                     (Map.update key (+ (Map.get key state) 1) state)
+;                     (Map.add key 1 state)))
+;             (make-hash)
+;             input)
+;       (Map.to-list)))
 
 ; Returns the only element of the list.
 (: exactly-one (All (T) (-> (Listof T) T)))
