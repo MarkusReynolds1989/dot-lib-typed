@@ -6,12 +6,12 @@
          racket/match)
 
 ; Returns a new list that contains all pairings of elements from two lists.
-#| (: all-pairs (All (T S) (-> (Listof T) (Listof S) (Listof (Pairof T S)))))
+(: all-pairs (All (T S) (-> (Listof T) (Listof S) (Listof (Tuple T S)))))
 (define (all-pairs list-one list-two)
   (if (null? list-one)
       '()
-      (append (map (lambda (x) (cons (car list-one) x)) list-two)
-              (all-pairs (cdr list-one) list-two)))) |#
+      (append (list (Tuple (car list-one) (car list-two)))
+              (all-pairs (cdr list-one) (cdr list-two)))))
 
 ; Returns a new list that contains the elements of the first list followed by
 ; elements of the second list.
@@ -115,6 +115,10 @@
 
 (module+ test
   (require typed/rackunit)
+
+  (test-equal? "All-pairs works."
+               (all-pairs '(1 2 3 4) '(1 2 3 4))
+               (list (Tuple 1 1) (Tuple 2 2) (Tuple 3 3) (Tuple 4 4)))
 
   (test-equal? "Append works." (append '(1 2 3 4) '(1 2 3 4)) '(1 2 3 4 1 2 3 4))
 
