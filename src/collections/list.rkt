@@ -54,10 +54,6 @@
     [(equal? (car source) value) #t]
     [else (contains value (cdr source))]))
 
-; TODO: The problem here is that if I just use tuples or something it's going to be very
-; slow to iterate the list, it would be better to have a Map.fold first
-; and use that.
-
 ; Applies a key-generating function to each element of a list and returns a list
 ; yielding unique keys and their number of occurances in the original list.
 (: count-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Tuple Key Integer)))))
@@ -70,6 +66,27 @@
              (ann (hash) (HashTable Key Integer))
              input)
        (Map.to-list)))
+
+; Returns a list that contains no duplicate entries. If an element occurs multiple times in the list
+; then the later occurances are discarded.
+(: distinct (All (T) (-> (Listof T) (Listof T))))
+(define (distinct input)
+  (~>> (fold (fn ([state : (HashTable T T)] [value : T])
+                 (if (Map.contains-key value state) state (Map.add value value state)))
+             (ann (hash) (HashTable T T))
+             input)
+       (Map.keys)))
+
+; Returns a list that contains no duplicate entries based on the key generating function.
+; If an elements occurs multiple times it is discarded.
+(: distinct-by (All (T Key) (-> (-> T Key) (Listof T) (Listof T))))
+(define (distinct-by projection input)
+  (~>> (fold (fn ([state : (HashTable Key T)] [value : T])
+                 (define key (projection value))
+                 (if (Map.contains-key key state) state (Map.add key value state)))
+             (ann (hash) (HashTable Key T))
+             input)
+       (Map.get-values)))
 
 ; Returns the only element of the list.
 (: exactly-one (All (T) (-> (Listof T) T)))
@@ -136,6 +153,19 @@
 (module+ test
   (require typed/rackunit)
 
+  (struct Person ([Name : String] [Age : Integer]) #:transparent)
+  (define people
+    :
+    (Listof Person)
+    (list (Person "Jim" 22)
+          (Person "Tim" 55)
+          (Person "Tim" 23)
+          (Person "Ted" 33)
+          (Person "Peter" 55)
+          (Person "Elana" 18)
+          (Person "Peter" 44)
+          (Person "Jim" 33)))
+
   (test-equal? "All-pairs works."
                (all-pairs '(1 2 3 4) '(1 2 3 4))
                (list (Tuple 1 1) (Tuple 2 2) (Tuple 3 3) (Tuple 4 4)))
@@ -166,6 +196,20 @@
                                (Tuple 'c "a")
                                (Tuple 'a "23")))
                (list (Tuple 'c 1) (Tuple 'b 2) (Tuple 'a 3)))
+
+  (test-equal? "Distinct works." (distinct (list 1 2 3 4 4 1)) (list 1 2 3 4))
+
+  (test-equal? "Distinct works, strings."
+               (distinct (list "One" "One" "One" "Two" "Three"))
+               (list "One" "Three" "Two"))
+
+  (test-equal? "Distinct-by works"
+               (distinct-by (fn ([x : Person]) (Person-Name x)) people)
+               (list (Person "Peter" 55)
+                     (Person "Ted" 33)
+                     (Person "Tim" 55)
+                     (Person "Elana" 18)
+                     (Person "Jim" 22)))
 
   (test-eq? "Exactly-one works." (exactly-one '(1)) 1)
 
