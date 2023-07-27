@@ -157,6 +157,16 @@
                          (list (Tuple 1 2) (Tuple 2 3) (Tuple 2 3) (Tuple 3 3)))
                (list (Tuple 1 1) (Tuple 2 2) (Tuple 3 1)))
 
+  (test-equal? "Count-by more fun works."
+               (count-by (fn ([x : (Tuple Symbol String)]) (Tuple-First x))
+                         (list (Tuple 'a "2")
+                               (Tuple 'b "3")
+                               (Tuple 'a "23")
+                               (Tuple 'b "44")
+                               (Tuple 'c "a")
+                               (Tuple 'a "23")))
+               (list (Tuple 'c 1) (Tuple 'b 2) (Tuple 'a 3)))
+
   (test-eq? "Exactly-one works." (exactly-one '(1)) 1)
 
   (test-exn "Exactly-one throws." exn:fail? (fn () (exactly-one '(1 2))))
