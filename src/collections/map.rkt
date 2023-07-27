@@ -18,7 +18,7 @@
   (hash-has-key? table key))
 
 ; The number of bindings in the map.
-;(: count (All (Key T) (-> (HashTable Key T) Integer)))
+(: count (All (Key T) (-> (HashTable Key T) Integer)))
 (define (count table)
   (hash-count table))
 
@@ -66,12 +66,16 @@
   (hash-ref table key))
 
 ; Folds over the bindings in the map.
-;(: fold (All (State Key T) (-> (-> State Key T State) State (HashTable Key T) State)))
-;(define (fold folder init-state table)
-;  (let loop ([index 0] [folder folder] [state init-state] [table table])
-;    (cond
-;      [(= index (count table)) state]
-;      [#t (loop (+ index 1) folder (folder state (hash-iterate-pair table index)) table)])))
+(: fold (All (State Key T) (-> (-> State Key T State) State (HashTable Key T) State)))
+(define (fold folder init-state table)
+  (let loop ([index 0] [folder folder] [state init-state] [table table])
+    (cond
+      [(= index (count table)) state]
+      [else
+       (loop (+ index 1)
+             folder
+             (folder state (hash-iterate-key table index) (hash-iterate-value table index))
+             table)])))
 
 (: to-list (All (Key T) (-> (HashTable Key T) (Listof (Pairof Key T)))))
 (define (to-list table)
@@ -115,7 +119,10 @@
 
   ;(test-equal? "Map works." (map (fn (key value) (values (add1 key) value)) table) (hash 2 "one"))
 
-  ; (test-equal? "Fold works." (fold (fn (acc pair) (+ (cdr pair) acc)) 0 add-table) 6)
+  (test-equal?
+   "Fold works."
+   (fold (fn ([state : Integer] [_ : String] [value : Integer]) (+ value state)) 0 add-table)
+   6)
 
   ;(test-equal? "Filter works."
   ;             (filter (fn (pair) (> (cdr pair) 1)) add-table)
