@@ -23,9 +23,9 @@
   (hash-count table))
 
 ; The empty map.
-;(: empty (-> (HashTable Nothing Nothing)))
+(: empty (All (Key T) -> (HashTable Key T)))
 (define (empty)
-  (hash))
+  (ann (hash) (HashTable Key T)))
 
 ; Returns true if the given predicat returns true for one of the bindings in the map.
 ;(: exists (All (Key T) (-> (-> Key T Boolean) (HashTable Key T) Boolean)))
@@ -77,15 +77,10 @@
              (folder state (hash-iterate-key table index) (hash-iterate-value table index))
              table)])))
 
-(: to-list (All (Key T) (-> (HashTable Key T) (Listof (Pairof Key T)))))
+(: to-list (All (Key T) (-> (HashTable Key T) (Listof (Tuple Key T)))))
 (define (to-list table)
   (for/list ([i (keys table)])
-    (cons i (get i table))))
-
-; Returns a new map with the value stored under key changed to the new value.
-(: update (All (Key T) (-> Key T (HashTable Key T) (HashTable Key T))))
-(define (update key value table)
-  (hash-set table key value))
+    (Tuple i (get i table))))
 
 ;(define (to-array table)
 ;  (List.to-array (hash-map table (fn (key value) (list key value)))))
@@ -102,8 +97,6 @@
   (define add-table (hash "one" 1 "two" 2 "three" 3))
 
   (test-equal? "Add works." (add 2 "two" table) (hash 1 "one" 2 "two"))
-
-  (test-equal? "Update works." (update 1 "three" table) (hash 1 "three"))
 
   (test-true "Contains works." (contains-key 1 table))
 

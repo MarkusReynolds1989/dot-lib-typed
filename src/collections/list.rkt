@@ -60,16 +60,16 @@
 
 ; Applies a key-generating function to each element of a list and returns a list
 ; yielding unique keys and their number of occurances in the original list.
-;(: count-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pairof Key Integer)))))
-;(define (count-by projection input)
-;  (~>> (fold (fn ([x : T] [state : (HashTable Key T)])
-;                 (define key : Key (projection x))
-;                 (if (Map.contains-key key state)
-;                     (Map.update key (+ (Map.get key state) 1) state)
-;                     (Map.add key 1 state)))
-;             (make-hash)
-;             input)
-;       (Map.to-list)))
+(: count-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Tuple Key Integer)))))
+(define (count-by projection input)
+  (~>> (fold (fn ([state : (HashTable Key Integer)] [value : T])
+                 (define key (projection value))
+                 (if (Map.contains-key key state)
+                     (Map.add key (+ (Map.get key state) 1) state)
+                     (Map.add key 1 state)))
+             (ann (hash) (HashTable Key Integer))
+             input)
+       (Map.to-list)))
 
 ; Returns the only element of the list.
 (: exactly-one (All (T) (-> (Listof T) T)))
@@ -117,9 +117,9 @@
       [(predicate (car input)) index]
       [else (loop (+ index 1) predicate (cdr input))])))
 
-(: fold (All (T State) (-> (-> T State State) State (Listof T) State)))
+(: fold (All (T State) (-> (-> State T State) State (Listof T) State)))
 (define (fold folder state input)
-  (if (null? input) state (fold folder (folder (car input) state) (cdr input))))
+  (if (null? input) state (fold folder (folder state (car input)) (cdr input))))
 
 ; Tests if all elemetns of the colleciton staisfy a given predicate.
 (: for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
@@ -152,6 +152,11 @@
 
   (test-false "Contains returns false." (contains "one" '("two" "three" "four")))
 
+  (test-equal? "Count-by works."
+               (count-by (fn ([x : (Tuple Integer Integer)]) (Tuple-First x))
+                         (list (Tuple 1 2) (Tuple 2 3) (Tuple 2 3) (Tuple 3 3)))
+               (list (Tuple 1 1) (Tuple 2 2) (Tuple 3 1)))
+
   (test-eq? "Exactly-one works." (exactly-one '(1)) 1)
 
   (test-exn "Exactly-one throws." exn:fail? (fn () (exactly-one '(1 2))))
@@ -183,7 +188,7 @@
 
   (test-false "Find-index works, returns false." (find-index (fn ([x : Integer]) (= 0 x)) '(1 2 3 4)))
 
-  (test-eq? "Fold works." (fold (fn ([x : Integer] [state : Integer]) (+ x state)) 0 '(1 2 3 4)) 10)
+  (test-eq? "Fold works." (fold (fn ([state : Integer] [x : Integer]) (+ x state)) 0 '(1 2 3 4)) 10)
 
   (test-true "For-all returns true." (for-all (fn ([x : Integer]) (= x 1)) '(1 1 1 1)))
 
