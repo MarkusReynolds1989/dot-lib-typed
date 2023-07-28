@@ -18,20 +18,9 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      - name: Update
-        run: |
-              sudo apt-get update
-              sudo apt-get upgrade
-
       # Runs a single command using the runners shell
       - name: Install Racket
         run: sudo apt-get install racket
 
-      - name: Install Powershell
-        run: sudo apt-get install powershell
-
-      - name: Build Libraries
-        run: pwsh build.ps1
-
-      - name: Run Tests
-        run: pwsh test.ps1
+      - name: Build and Test
+        run: racket build.rkt
