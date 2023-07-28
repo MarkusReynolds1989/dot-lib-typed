@@ -8,5 +8,5 @@
         "src/collections/seq.rkt"
         "src/io/file.rkt"))
 
-(for-each (lambda (x) (system (~a "raco make " x))) packages)
+(for-each (lambda (x) (system (~a "raco make " x)) (displayln (~a "Building: " x)) packages)
 (for-each (lambda (x) (system (~a "raco test " x))) packages)
