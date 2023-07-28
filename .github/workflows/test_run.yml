@@ -25,8 +25,8 @@ jobs:
       # Runs a single command using the runners shell
       - name: Install Racket
         run: |
-        apt list --all-versions racket
-        sudo apt-get install racket=8.8
+              sudo apt list --all-versions racket
+              sudo apt-get install racket=8.8
 
       - name: Build and Test
         run: racket build.rkt
