@@ -1,4 +1,4 @@
-#lang typed/racket/base/deep
+#lang typed/racket/base
 
 (require racket/stream
          "../globals.rkt")

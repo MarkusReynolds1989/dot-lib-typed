@@ -1,4 +1,4 @@
-#lang typed/racket/base/deep
+#lang typed/racket/base
 
 (require "../globals.rkt"
          (prefix-in Map. "map.rkt")
