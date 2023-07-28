@@ -8,7 +8,7 @@
         "src/collections/seq.rkt"
         "src/io/file.rkt"))
 
-(system "raco pkg install threading")
+(system "yes | raco pkg install threading")
 
 (for-each (lambda (x)
             (displayln (~a "Building: " x))
