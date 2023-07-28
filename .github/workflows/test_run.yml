@@ -22,5 +22,11 @@ jobs:
       - name: Install Racket
         run: sudo apt-get install racket
 
-      - name: Build and Test
-        run: racket build.rkt
+      - name: Install Powershell
+        run: sudo apt-get install powershell
+
+      - name: Build Libraries
+        run: pwsh build.ps1
+
+      - name: Run Tests
+        run: pwsh test.ps1
