@@ -1,4 +1,4 @@
-#lang typed/racket/base/deep
+#lang typed/racket/base
 
 (define-syntax-rule (fn args body ...)
   (lambda args
