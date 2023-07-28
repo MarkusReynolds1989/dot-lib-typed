@@ -1,4 +1,4 @@
-#lang racket/base
+#lang typed/racket/base
 
 ; TODO: Turn this into a class.
 (require (prefix-in Array. "../collections/array.rkt"))
@@ -7,12 +7,16 @@
 ; Index is the current index we are on, inc to add a new item.
 ; Size is how many total the array can hold.
 ; Count is how many items are actually in the array.
-(struct Resize-array (array index size count) #:mutable)
+(struct (T)
+        Resize-Array
+        ([Array : (MutableVector T)] [Index : Integer] [Size : Integer] [Count : Integer])
+  #:mutable)
 
-(define (Resize-array-new [size 256])
-  (Resize-array (Array.create size '()) -1 size 0))
+(: new (All (T) (-> Integer (Resize-Array T))))
+(define (new [size 256])
+  (Resize-Array (Array (ann (Array.create size '()) (MutableVector T)) (Index -1) (Size size 0))))
 
-(define (Resize-array-get index input)
+(define (get index input)
   (Array.get index (Resize-array-array input)))
 
 ; Create a new array of size: size * 2.
@@ -24,7 +28,7 @@
   (set-Resize-array-array! input (Array.copy-to (Resize-array-array input) output))
   (set-Resize-array-size! size))
 
-(define (Resize-array-add item input)
+(define (add item input)
   (define index (add1 (Resize-array-index input)))
   (define count (add1 (Resize-array-count input)))
   (define size (Resize-array-size input))
@@ -36,8 +40,8 @@
   (set-Resize-array-count! input count)
   (vector-set! (Resize-array-array input) index item))
 
-(provide Resize-array-new
-         Resize-array-add)
+(provide new
+         add)
 
 (module+ test
   (require rackunit)
