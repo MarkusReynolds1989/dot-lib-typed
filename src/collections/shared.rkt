@@ -1,4 +1,4 @@
-#lang typed/racket/base/deep
+#lang typed/racket/base
 
 
 (provide (all-defined-out))
