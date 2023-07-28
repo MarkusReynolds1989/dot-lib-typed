@@ -18,6 +18,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
+      # Update
+      - name: Update
+        run: sudo apt-get update
+
       # Runs a single command using the runners shell
       - name: Install Racket
         run: sudo apt-get install racket=8.9
