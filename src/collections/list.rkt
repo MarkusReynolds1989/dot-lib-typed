@@ -126,6 +126,7 @@
     [(predicate (car input)) (car input)]
     [else (find predicate (cdr input))]))
 
+; Returns the first element for which the given function returns true.
 (: find-index (All (T) (-> (-> T Boolean) (Listof T) (U Number False))))
 (define (find-index predicate input)
   (let loop ([index 0] [predicate predicate] [input input])
@@ -134,9 +135,31 @@
       [(predicate (car input)) index]
       [else (loop (+ index 1) predicate (cdr input))])))
 
+; Returns the last element for which the given function returns true.
+(: find-index-back (All (T) (-> (-> T Boolean) (Listof T) (U Number False))))
+(define (find-index-back predicate input)
+  (let loop ([index (- (length input) 1)] [predicate predicate] [input (reverse input)])
+    (cond
+      [(null? input) #f]
+      [(predicate (car input)) index]
+      [else (loop (- index 1) predicate (cdr input))])))
+
+; Applies a function to each element of the collection, threading an accumulator
+; argument through the computation.
 (: fold (All (T State) (-> (-> State T State) State (Listof T) State)))
 (define (fold folder state input)
   (if (null? input) state (fold folder (folder state (car input)) (cdr input))))
+
+; Applies a function to each element of the two collections, threading an accumulator
+; argument through the computation. Each collection must have the same size.
+(: fold-two (All (T S State) (-> (-> State T S State) State (Listof T) (Listof S) State)))
+(define (fold-two folder state list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Two lists must be the same size."))
+
+  (if (null? list-one)
+      state
+      (fold-two folder (folder state (car list-one) (car list-two)) (cdr list-one) (cdr list-two))))
 
 ; Tests if all elemetns of the colleciton staisfy a given predicate.
 (: for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
@@ -241,6 +264,8 @@
             2)
 
   (test-false "Find-index works, returns false." (find-index (fn ([x : Integer]) (= 0 x)) '(1 2 3 4)))
+
+  (test-eq? "Find-index-back works." (find-index-back (fn ([x : Integer]) (= 0 x)) '(4 3 2 0 1)) 3)
 
   (test-eq? "Fold works." (fold (fn ([state : Integer] [x : Integer]) (+ x state)) 0 '(1 2 3 4)) 10)
 
