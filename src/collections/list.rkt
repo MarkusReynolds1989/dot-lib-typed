@@ -161,17 +161,75 @@
       state
       (fold-two folder (folder state (car list-one) (car list-two)) (cdr list-one) (cdr list-two))))
 
-; Tests if all elemetns of the colleciton staisfy a given predicate.
+; Applies a function to each element of the collection, starting from the end,
+; threading an accumlator through the computation.
+(: fold-back (All (T State) (-> (-> State T State) State (Listof T) State)))
+(define (fold-back folder state input)
+  (let loop ([folder folder] [state state] [input (reverse input)])
+    (if (null? input) state (loop folder (folder state (car input)) (cdr input)))))
+
+; Applies a function to corresponding elements of two collections, threading an
+; accumulator argument through the computation. The collections must have identical size.
+(: fold-back-two (All (T S State) (-> (-> State T S State) State (Listof T) (Listof S) State)))
+(define (fold-back-two folder state list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Expected both lists to be of the same length."))
+
+  (let loop ([folder folder]
+             [state state]
+             [list-one (reverse list-one)]
+             [list-two (reverse list-two)])
+
+    (if (null? list-one)
+        state
+        (loop folder (folder state (car list-one) (car list-two)) (cdr list-one) (cdr list-two)))))
+
+; Tests if all elements of the colleciton staisfy a given predicate.
 (: for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
-(define (for-all predicate list)
-  (if (contains #f (map predicate list)) #f #t))
+(define (for-all predicate input)
+  (if (contains #f (map predicate input)) #f #t))
+
+; Tests if all corresponding elements of the collection satisfy the given predicate pairwise.
+;(: for-all-two (All (T S) (-> (-> T S Boolean) (Listof T) (Listof S) Boolean)))
+;(define (for-all-two predicate list-one list-two)
+;  (when (not (= (length list-one) (length list-two)))
+;    (error "Expected both lists to be of the same length."))
+;
+;  (if (contains #f (map)))
+;  )
 
 ; Applies a key-generating function to each element of a list and yields
 ; a list of unique keys. Each unique key contains a list of all elements that match
 ; to this key.
-;(: group-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pairof Key (Listof T))))))
-;(define (group-by projection input)
-;  )
+(: group-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Tuple Key (Listof T))))))
+(define (group-by projection input)
+  (~>> (fold (fn ([state : (HashTable Key (Listof T))] [value : T])
+                 (define key (projection value))
+                 (if (Map.contains-key key state)
+                     (Map.add key (append (Map.get key state) (list value)) state)
+                     (Map.add key (list value) state)))
+             (ann (hash) (HashTable Key (Listof T)))
+             input)
+       (Map.to-list)))
+
+; Returns the first element of the list.
+(: head (All (T) (-> (Listof T) T)))
+(define (head input)
+  (car input))
+
+; Returns a new list whose elements are the corresponding elements of the input list
+; paired with the index (from 0) of each element.
+(: indexed (All (T) (-> (Listof T) (Listof (Tuple Integer T)))))
+(define (indexed input)
+  (let loop ([index 0] [input input])
+    (if (null? input) '() (cons (Tuple index (car input)) (loop (+ index 1) (cdr input))))))
+
+; Creates a list of calling the given generator on each index.
+(: init (All (T) (-> Integer (-> Integer T) (Listof T))))
+(define (init count
+              initializer)
+  (let loop ([index 0] [initializer initializer])
+    (if (> index count) '() (cons (initializer index) (loop (+ index 1) initializer)))))
 
 (module+ test
   (require typed/rackunit)
@@ -269,6 +327,43 @@
 
   (test-eq? "Fold works." (fold (fn ([state : Integer] [x : Integer]) (+ x state)) 0 '(1 2 3 4)) 10)
 
+  (test-eq? "Fold-two works."
+            (fold-two (fn ([state : Integer] [x : Integer] [y : Integer]) (+ x y state))
+                      0
+                      '(1 2 3 4)
+                      '(1 2 3 4))
+            20)
+
+  (test-eq? "Fold-back works."
+            (fold-back (fn ([state : Integer] [x : Integer]) (+ x state)) 0 '(1 2 3 4))
+            10)
+
+  (test-eq? "Fold-back-two works."
+            (fold-back-two (fn ([state : Integer] [x : Integer] [y : Integer]) (+ x y state))
+                           0
+                           '(1 2 3 4)
+                           '(1 2 3 4))
+            20)
+
   (test-true "For-all returns true." (for-all (fn ([x : Integer]) (= x 1)) '(1 1 1 1)))
 
-  (test-false "For-all returns false." (for-all (fn ([x : Integer]) (= x 1)) '(1 2 3 4 5))))
+  (test-false "For-all returns false." (for-all (fn ([x : Integer]) (= x 1)) '(1 2 3 4 5)))
+
+  (test-equal? "Group-by works."
+               (group-by (fn ([x : Person]) (Person-Name x)) people)
+               (list (Tuple "Peter" (list (Person "Peter" 55) (Person "Peter" 44)))
+                     (Tuple "Ted" (list (Person "Ted" 33)))
+                     (Tuple "Tim" (list (Person "Tim" 55) (Person "Tim" 23)))
+                     (Tuple "Elana" (list (Person "Elana" 18)))
+                     (Tuple "Jim" (list (Person "Jim" 22) (Person "Jim" 33)))))
+
+  (test-eq? "Head works." (head '(1 2 3 4)) 1)
+
+  (test-equal? "Indexed works."
+               (indexed '(1 2 3 4))
+               (list (Tuple 0 1) (Tuple 1 2) (Tuple 2 3) (Tuple 3 4)))
+
+  (test-equal? "Init works."
+               (init 10
+                     (fn ([x : Integer]) (+ x 1)))
+               '(1 2 3 4 5 6 7 8 9 10 11)))
