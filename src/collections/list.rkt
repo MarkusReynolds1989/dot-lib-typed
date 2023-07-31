@@ -5,6 +5,11 @@
          threading
          racket/match)
 
+(: length-check (All (T1 T2) (-> (Listof T1) (Listof T2) Void)))
+(define (length-check list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Expected both lists to be of the same length.")))
+
 ; TODO: This functionality isn't right, we should be able to give lists of different
 ; lengths.
 ; Returns a new list that contains all pairings of elements from two lists.
@@ -172,8 +177,7 @@
 ; accumulator argument through the computation. The collections must have identical size.
 (: fold-back-two (All (T1 T2 State) (-> (-> State T1 T2 State) State (Listof T1) (Listof T2) State)))
 (define (fold-back-two folder state list-one list-two)
-  (when (not (= (length list-one) (length list-two)))
-    (error "Expected both lists to be of the same length."))
+  (length-check list-one list-two)
 
   (let loop ([folder folder]
              [state state]
@@ -262,8 +266,7 @@
 ; have identical size.
 (: iter-two (All (T1 T2) (-> (-> T1 T2 Void) (Listof T1) (Listof T2) Void)))
 (define (iter-two action list-one list-two)
-  (when (not (= (length list-one) (length list-two)))
-    (error "Expected both lists to be of the same length."))
+  (length-check list-one list-two)
 
   (if (null? list-one)
       (void)
@@ -286,8 +289,8 @@
 ; size. The integer passed to the function indicates the index of element.
 (: iter-i-two (All (T1 T2) (-> (-> Integer T1 T2 Void) (Listof T1) (Listof T2) Void)))
 (define (iter-i-two action list-one list-two)
-  (when (not (= (length list-one) (length list-two)))
-    (error "Expected both lists to be of the same length."))
+  (length-check list-one list-two)
+
   (let loop ([index 0] [action action] [list-one list-one] [list-two list-two])
     (if (null? list-one)
         (void)
@@ -299,6 +302,50 @@
 (: last (All (T) (-> (Listof T) T)))
 (define (last input)
   (if (null? (cdr input)) (car input) (last (cdr input))))
+
+; Returns the length of the list.
+(: length (All (T) (-> (Listof T) Integer)))
+(define (length input)
+  (let loop ([index 0] [input input])
+    (if (null? input) index (loop (+ index 1) (cdr input)))))
+
+; Builds a new collection whose elements are the results of applying the given
+; function to each of the elements of the collection.
+(: map (All (T1 T2) (-> (-> T1 T2) (Listof T1) (Listof T2))))
+(define (map mapping input)
+  (if (null? input) '() (cons (mapping (car input)) (map mapping (cdr input)))))
+
+; Builds a new collection whose elements rea the results of applying the given
+; function to the corresponding elements of the two collections pairwise.
+; map-two
+; map-three
+
+; map-fold
+; map-fold-back
+
+; Builds a new collection whose elements are the results of applying the given
+; function to each of the elements of the collection. The integer index passed to the function
+; indicates the index (from 0) of the element being transformed.
+(: map-i (All (T1 T2) (-> (-> Integer T1 T2) (Listof T1) (Listof T2))))
+(define (map-i mapping input)
+  (let loop ([index 0] [mapping mapping] [input input])
+    (if (null? input) '() (cons (mapping index (car input)) (loop (+ index 1) mapping (cdr input))))))
+
+; Like map-i, but mapping corresponding elements from two lists of equal length.
+(: map-i-two (All (T1 T2 T3) (-> (-> Integer T1 T2 T3) (Listof T1) (Listof T2) (Listof T3))))
+(define (map-i-two mapping list-one list-two)
+  (length-check list-one list-two)
+
+  (let loop ([index 0] [mapping mapping] [list-one list-one] [list-two list-two])
+    (if (null? list-one)
+        '()
+        (cons (mapping index (car list-one) (car list-two))
+              (loop (+ index 1) mapping (cdr list-one) (cdr list-two))))))
+
+; Returns the greatest of all elements of the list.
+(: max (-> (Listof Real) Real))
+(define (max input)
+  (fold (fn ([state : Real] [x : Real]) (if (< state x) x state)) min-int input))
 
 (module+ test
   (require typed/rackunit)
@@ -447,4 +494,20 @@
 
   (test-eq? "Last works." (last '(1 2 3 4)) 4)
 
-  (test-eq? "Last works again." (last '(1)) 1))
+  (test-eq? "Last works again." (last '(1)) 1)
+
+  (test-eq? "Length works." (length '(1 2 3 4)) 4)
+
+  (test-equal? "Map works." (map (fn ([x : Integer]) (+ x 1)) '(1 2 3 4)) '(2 3 4 5))
+
+  (test-equal? "Map-i works."
+               (map-i (fn ([x : Integer] [y : Integer]) (+ x y)) '(1 2 3 4))
+               '(1 3 5 7))
+
+  (test-equal?
+   "Map-i-two works."
+   (map-i-two (fn ([x : Integer] [y : Integer] [z : Integer]) (+ x y z)) '(1 2 3 4) '(1 2 3 4))
+   '(2 5 8 11))
+
+  (test-eq? "Max works." (max '(1 2 3 4)) 4)
+  (test-eq? "Max works, more numbers" (max '(-2000 344444 -10000 0 50000 2)) 344444))
