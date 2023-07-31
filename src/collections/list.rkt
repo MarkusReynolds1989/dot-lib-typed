@@ -8,7 +8,7 @@
 ; TODO: This functionality isn't right, we should be able to give lists of different
 ; lengths.
 ; Returns a new list that contains all pairings of elements from two lists.
-(: all-pairs (All (T S) (-> (Listof T) (Listof S) (Listof (Tuple T S)))))
+(: all-pairs (All (T1 T2) (-> (Listof T1) (Listof T2) (Listof (Tuple T1 T2)))))
 (define (all-pairs list-one list-two)
   (if (null? list-one)
       '()
@@ -38,7 +38,7 @@
 ; Applies a function to each element in a list and then returns a list of values v where
 ; the applied function erturns Some(v). Returns an emtpy list when the input list is empty
 ; or when the applied chooser functionr returns None for all elements.
-(: choose (All (T S) (-> (-> T (Maybe S)) (Listof T) (Listof S))))
+(: choose (All (T1 T2) (-> (-> T1 (Maybe T2)) (Listof T1) (Listof T2))))
 (define (choose chooser input)
   (cond
     [(null? input) '()]
@@ -102,7 +102,7 @@
     [else (exists predicate (cdr input))]))
 
 ; Tests if any pair of corresponding elements of the lists satisifes the given predicate.
-(: exists-two (All (T S) (-> (-> T S Boolean) (Listof T) (Listof S) Boolean)))
+(: exists-two (All (T1 T2) (-> (-> T1 T2 Boolean) (Listof T1) (Listof T2) Boolean)))
 (define (exists-two predicate list-one list-two)
   (cond
     [(or (null? list-one) (null? list-two)) #f]
@@ -170,7 +170,7 @@
 
 ; Applies a function to corresponding elements of two collections, threading an
 ; accumulator argument through the computation. The collections must have identical size.
-(: fold-back-two (All (T S State) (-> (-> State T S State) State (Listof T) (Listof S) State)))
+(: fold-back-two (All (T1 T2 State) (-> (-> State T1 T2 State) State (Listof T1) (Listof T2) State)))
 (define (fold-back-two folder state list-one list-two)
   (when (not (= (length list-one) (length list-two)))
     (error "Expected both lists to be of the same length."))
@@ -230,6 +230,75 @@
               initializer)
   (let loop ([index 0] [initializer initializer])
     (if (> index count) '() (cons (initializer index) (loop (+ index 1) initializer)))))
+
+; Returns a new list with a new item inserted before the given index.
+; insert-at
+; insert-many-at
+
+; Returns true if the list contains no elements, false otherwise.
+(: is-empty (All (T) (-> (Listof T) Boolean)))
+(define (is-empty input)
+  (= (length input) 0))
+
+; Indexes into the list. The first element has index 0.
+(: item (All (T) (-> Integer (Listof T) T)))
+(define (item index input)
+  (when (or (> index (length input)) (< index 0))
+    (error "Index out of bounds of the collection."))
+
+  (let loop ([current 0] [index index] [input input])
+    (if (= current index) (car input) (loop (+ current 1) index (cdr input)))))
+
+; Applies the given function to each element of the collection.
+(: iter (All (T) (-> (-> T Void) (Listof T) Void)))
+(define (iter action input)
+  (if (null? input)
+      (void)
+      (begin
+        (action (car input))
+        (iter action (cdr input)))))
+
+; Applies the given function to two collections simutaneously. The collections must
+; have identical size.
+(: iter-two (All (T1 T2) (-> (-> T1 T2 Void) (Listof T1) (Listof T2) Void)))
+(define (iter-two action list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Expected both lists to be of the same length."))
+
+  (if (null? list-one)
+      (void)
+      (begin
+        (action (car list-one) (car list-two))
+        (iter-two action (cdr list-one) (cdr list-two)))))
+
+; Applies the given function to each element of the collection.
+; The integer passsed to the function indicates the index of the element.
+(: iter-i (All (T) (-> (-> Integer T Void) (Listof T) Void)))
+(define (iter-i action input)
+  (let loop ([index 0] [action action] [input input])
+    (if (null? input)
+        (void)
+        (begin
+          (action index (car input))
+          (loop (+ index 1) action (cdr input))))))
+
+; Applies the given function to two collections simultaneously. The collections must have identical
+; size. The integer passed to the function indicates the index of element.
+(: iter-i-two (All (T1 T2) (-> (-> Integer T1 T2 Void) (Listof T1) (Listof T2) Void)))
+(define (iter-i-two action list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Expected both lists to be of the same length."))
+  (let loop ([index 0] [action action] [list-one list-one] [list-two list-two])
+    (if (null? list-one)
+        (void)
+        (begin
+          (action index (car list-one) (car list-two))
+          (loop (+ index 1) action (cdr list-one) (cdr list-two))))))
+
+; Returns the last element of the list.
+(: last (All (T) (-> (Listof T) T)))
+(define (last input)
+  (if (null? (cdr input)) (car input) (last (cdr input))))
 
 (module+ test
   (require typed/rackunit)
@@ -366,4 +435,16 @@
   (test-equal? "Init works."
                (init 10
                      (fn ([x : Integer]) (+ x 1)))
-               '(1 2 3 4 5 6 7 8 9 10 11)))
+               '(1 2 3 4 5 6 7 8 9 10 11))
+
+  (test-eq? "Item works." (item 2 (list 1 2 23 4 5)) 23)
+  (test-exn "Item index invalid, negative." exn:fail? (fn () (item -23 '(1 2))))
+  (test-exn "Item index invalid, too high." exn:fail? (fn () (item 44 '(1 2))))
+
+  (test-case "Iter works. Not really a test, just a check to make sure iter works."
+    (define start '(1 2 3 4))
+    (iter (fn ([x : Integer]) (set! x (+ x 1))) start))
+
+  (test-eq? "Last works." (last '(1 2 3 4)) 4)
+
+  (test-eq? "Last works again." (last '(1)) 1))
