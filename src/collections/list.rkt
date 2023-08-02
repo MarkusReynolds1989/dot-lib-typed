@@ -347,6 +347,48 @@
 (define (max input)
   (fold (fn ([state : Real] [x : Real]) (if (< state x) x state)) min-int input))
 
+; TODO: I can't write this like this, I need state to be a real for comparison
+; so I need to implement some more stuff.
+; I might want to just do a custom comparator I can pass around.
+; Returns the greatest of all elements of the list using the projection.
+; (: max-by (-> (All (T) (-> (-> Real T Real) (Listof T) T))))
+; (define (max-by projection input)
+;  (fold (fn ([state : Real] [x : T]) (if (< state (projection x)) x state)) min-int input))
+
+; Returns the lowest of all elements of the list.
+(: min (-> (Listof Real) Real))
+(define (min input)
+  (fold (fn ([state : Real] [x : Real]) (if (> state x) x state)) max-int input))
+
+; min-by
+
+; of-array
+; of-seq
+
+; Returns a list of each element in the input list and it's predecssor, with the
+; exception of the first element which is only returned as the predecessor of the second element.
+(: pair-wise (All (T) (-> (Listof T) (Listof (Tuple T T)))))
+(define (pair-wise input)
+  (match input
+    ['() '()]
+    [(list _) '()]
+    [(list e1 e2) (list (Tuple e1 e2))]
+    [(list e1 e2 rest ...) (cons (Tuple e1 e2) (pair-wise (cons e2 rest)))]))
+
+; Splits the collection into two collections, containing the elements for which the given predicate
+; returns True and False respectively. Elmenet order is preserved in both of the created lists.
+(: partition (All (T) (-> (-> T Boolean) (Listof T) (Tuple (Listof T) (Listof T)))))
+(define (partition predicate input)
+  (fold
+   (fn
+    ([state : (Tuple (Listof T) (Listof T))] [x : T])
+    (cond
+      [(equal? (predicate x) #t) (Tuple (append (Tuple-First state) (list x)) (Tuple-Second state))]
+      [(equal? (predicate x) #f) (Tuple (Tuple-First state) (append (Tuple-Second state) (list x)))]
+      [else state]))
+   (Tuple (ann (list) (Listof T)) (ann (list) (Listof T)))
+   input))
+
 (module+ test
   (require typed/rackunit)
 
@@ -510,4 +552,14 @@
    '(2 5 8 11))
 
   (test-eq? "Max works." (max '(1 2 3 4)) 4)
-  (test-eq? "Max works, more numbers" (max '(-2000 344444 -10000 0 50000 2)) 344444))
+  (test-eq? "Max works, more numbers" (max '(-2000 344444 -10000 0 50000 2)) 344444)
+
+  (test-eq? "Min works." (min '(1 2 3 4)) 1)
+
+  (test-equal? "Pair-wise works." (pair-wise '(1 2 3 4)) (list (Tuple 1 2) (Tuple 2 3) (Tuple 3 4)))
+  (test-equal? "Pair-wise works, bad example." (pair-wise '(1)) '())
+  (test-equal? "Pair-wise, on pair." (pair-wise '(1 2)) (list (Tuple 1 2)))
+
+  (test-equal? "Partition works."
+               (partition (fn ([x : Integer]) (> x 1)) '(1 2 1 3 4 5 1 1))
+               (Tuple (list 2 3 4 5) (list 1 1 1 1))))
