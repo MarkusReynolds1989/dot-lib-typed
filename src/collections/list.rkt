@@ -389,6 +389,53 @@
    (Tuple (ann (list) (Listof T)) (ann (list) (Listof T)))
    input))
 
+; Applies the given function to successive elements, returning the first result where function
+; returns Some(x) for some x. If not such element exists, raise "KeyNotFound".
+(: pick (All (T1 T2) (-> (-> T1 (Maybe T2)) (Listof T1) T2)))
+(define (pick chooser input)
+  (match input
+    ['() (error "Key Not Found.")]
+    [(Some v) v]
+    [_ (pick chooser (cdr input))]))
+
+; Apply a function to each element of the collection, threading an accumulator argument through
+; the computation. Apply the function to the first wo elements of the list. Then feed this result
+; into the function along with the third element and so on.
+(: reduce (All (T) (-> (-> T T T) (Listof T) T)))
+(define (reduce reduction input)
+  (fold (fn (acc item) (reduction acc item)) (head input) (tail input)))
+
+; TODO: reduce-back
+; TODO: remove-at
+; TODO: remove-many-at
+
+; TODO: Creates a list by replicating the given initial value.
+; (: replicate (All (-> (Integer) (T) (Listof T))))
+; (define (replicate count initial)
+;  ())
+
+; Reverse the input list.
+(: rev (All (T) (-> (Listof T) (Listof T))))
+(define (rev input)
+  (reverse input))
+
+; Like fold, but returns all intermediary states.
+(: scan (All (State T) (-> (-> State T State) State (Listof T) (Listof State))))
+(define (scan folder state input)
+  (if (null? input)
+      '()
+      (append (list (folder state (head input)))
+              (scan folder (folder state (head input)) (tail input)))))
+
+; Like scan, but works from right to left instead of left to right.
+(: scan-back (All (State T) (-> (-> State T State) State (Listof T) (Listof State))))
+(define (scan-back folder state input)
+  (scan folder state (rev input)))
+
+(: tail (All (T) (-> (Listof T) (Listof T))))
+(define (tail input)
+  (cdr input))
+
 (module+ test
   (require typed/rackunit)
 
@@ -562,4 +609,23 @@
 
   (test-equal? "Partition works."
                (partition (fn ([x : Integer]) (> x 1)) '(1 2 1 3 4 5 1 1))
-               (Tuple (list 2 3 4 5) (list 1 1 1 1))))
+               (Tuple (list 2 3 4 5) (list 1 1 1 1)))
+
+  ; Test for chooser
+  ;(test-equal? "Choose works."
+  ;             (choose (fn ([x : Integer]) (if (> x 1) (Some "works") (None))) '(1 2 1 3 4 5 1 1))
+  ;             "works")
+
+  (test-equal? "Reduce works."
+               (reduce (fn ([acc : Integer] [x : Integer]) (+ acc x)) (list 1 2 3 4))
+               10)
+
+  (test-equal? "Rev works." (rev (list 1 2 3 4)) (list 4 3 2 1))
+
+  (test-equal? "Scan works."
+               (scan (fn ([acc : Integer] [x : Integer]) (+ acc x)) 0 (list 1 2 3 4))
+               (list 1 3 6 10))
+
+  (test-equal? "Scan-back works."
+               (scan (fn ([acc : Integer] [x : Integer]) (+ acc x)) 0 (list 1 2 3 4))
+               (list 1 3 6 10)))
