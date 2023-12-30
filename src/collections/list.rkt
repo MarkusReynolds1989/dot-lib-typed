@@ -5,10 +5,15 @@
          threading
          racket/match)
 
+(: length-check (All (T1 T2) (-> (Listof T1) (Listof T2) Void)))
+(define (length-check list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Expected both lists to be of the same length.")))
+
 ; TODO: This functionality isn't right, we should be able to give lists of different
 ; lengths.
 ; Returns a new list that contains all pairings of elements from two lists.
-(: all-pairs (All (T S) (-> (Listof T) (Listof S) (Listof (Tuple T S)))))
+(: all-pairs (All (T1 T2) (-> (Listof T1) (Listof T2) (Listof (Tuple T1 T2)))))
 (define (all-pairs list-one list-two)
   (if (null? list-one)
       '()
@@ -38,7 +43,7 @@
 ; Applies a function to each element in a list and then returns a list of values v where
 ; the applied function erturns Some(v). Returns an emtpy list when the input list is empty
 ; or when the applied chooser functionr returns None for all elements.
-(: choose (All (T S) (-> (-> T (Maybe S)) (Listof T) (Listof S))))
+(: choose (All (T1 T2) (-> (-> T1 (Maybe T2)) (Listof T1) (Listof T2))))
 (define (choose chooser input)
   (cond
     [(null? input) '()]
@@ -102,7 +107,7 @@
     [else (exists predicate (cdr input))]))
 
 ; Tests if any pair of corresponding elements of the lists satisifes the given predicate.
-(: exists-two (All (T S) (-> (-> T S Boolean) (Listof T) (Listof S) Boolean)))
+(: exists-two (All (T1 T2) (-> (-> T1 T2 Boolean) (Listof T1) (Listof T2) Boolean)))
 (define (exists-two predicate list-one list-two)
   (cond
     [(or (null? list-one) (null? list-two)) #f]
@@ -126,6 +131,7 @@
     [(predicate (car input)) (car input)]
     [else (find predicate (cdr input))]))
 
+; Returns the first element for which the given function returns true.
 (: find-index (All (T) (-> (-> T Boolean) (Listof T) (U Number False))))
 (define (find-index predicate input)
   (let loop ([index 0] [predicate predicate] [input input])
@@ -134,21 +140,306 @@
       [(predicate (car input)) index]
       [else (loop (+ index 1) predicate (cdr input))])))
 
+; Returns the last element for which the given function returns true.
+(: find-index-back (All (T) (-> (-> T Boolean) (Listof T) (U Number False))))
+(define (find-index-back predicate input)
+  (let loop ([index (- (length input) 1)] [predicate predicate] [input (reverse input)])
+    (cond
+      [(null? input) #f]
+      [(predicate (car input)) index]
+      [else (loop (- index 1) predicate (cdr input))])))
+
+; Applies a function to each element of the collection, threading an accumulator
+; argument through the computation.
 (: fold (All (T State) (-> (-> State T State) State (Listof T) State)))
 (define (fold folder state input)
   (if (null? input) state (fold folder (folder state (car input)) (cdr input))))
 
-; Tests if all elemetns of the colleciton staisfy a given predicate.
+; Applies a function to each element of the two collections, threading an accumulator
+; argument through the computation. Each collection must have the same size.
+(: fold-two (All (T S State) (-> (-> State T S State) State (Listof T) (Listof S) State)))
+(define (fold-two folder state list-one list-two)
+  (when (not (= (length list-one) (length list-two)))
+    (error "Two lists must be the same size."))
+
+  (if (null? list-one)
+      state
+      (fold-two folder (folder state (car list-one) (car list-two)) (cdr list-one) (cdr list-two))))
+
+; Applies a function to each element of the collection, starting from the end,
+; threading an accumlator through the computation.
+(: fold-back (All (T State) (-> (-> State T State) State (Listof T) State)))
+(define (fold-back folder state input)
+  (let loop ([folder folder] [state state] [input (reverse input)])
+    (if (null? input) state (loop folder (folder state (car input)) (cdr input)))))
+
+; Applies a function to corresponding elements of two collections, threading an
+; accumulator argument through the computation. The collections must have identical size.
+(: fold-back-two (All (T1 T2 State) (-> (-> State T1 T2 State) State (Listof T1) (Listof T2) State)))
+(define (fold-back-two folder state list-one list-two)
+  (length-check list-one list-two)
+
+  (let loop ([folder folder]
+             [state state]
+             [list-one (reverse list-one)]
+             [list-two (reverse list-two)])
+
+    (if (null? list-one)
+        state
+        (loop folder (folder state (car list-one) (car list-two)) (cdr list-one) (cdr list-two)))))
+
+; Tests if all elements of the colleciton staisfy a given predicate.
 (: for-all (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
-(define (for-all predicate list)
-  (if (contains #f (map predicate list)) #f #t))
+(define (for-all predicate input)
+  (if (contains #f (map predicate input)) #f #t))
+
+; Tests if all corresponding elements of the collection satisfy the given predicate pairwise.
+;(: for-all-two (All (T S) (-> (-> T S Boolean) (Listof T) (Listof S) Boolean)))
+;(define (for-all-two predicate list-one list-two)
+;  (when (not (= (length list-one) (length list-two)))
+;    (error "Expected both lists to be of the same length."))
+;
+;  (if (contains #f (map)))
+;  )
 
 ; Applies a key-generating function to each element of a list and yields
 ; a list of unique keys. Each unique key contains a list of all elements that match
 ; to this key.
-;(: group-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Pairof Key (Listof T))))))
-;(define (group-by projection input)
-;  )
+(: group-by (All (T Key) (-> (-> T Key) (Listof T) (Listof (Tuple Key (Listof T))))))
+(define (group-by projection input)
+  (~>> (fold (fn ([state : (HashTable Key (Listof T))] [value : T])
+                 (define key (projection value))
+                 (if (Map.contains-key key state)
+                     (Map.add key (append (Map.get key state) (list value)) state)
+                     (Map.add key (list value) state)))
+             (ann (hash) (HashTable Key (Listof T)))
+             input)
+       (Map.to-list)))
+
+; Returns the first element of the list.
+(: head (All (T) (-> (Listof T) T)))
+(define (head input)
+  (car input))
+
+; Returns a new list whose elements are the corresponding elements of the input list
+; paired with the index (from 0) of each element.
+(: indexed (All (T) (-> (Listof T) (Listof (Tuple Integer T)))))
+(define (indexed input)
+  (let loop ([index 0] [input input])
+    (if (null? input) '() (cons (Tuple index (car input)) (loop (+ index 1) (cdr input))))))
+
+; Creates a list of calling the given generator on each index.
+(: init (All (T) (-> Integer (-> Integer T) (Listof T))))
+(define (init count
+              initializer)
+  (let loop ([index 0] [initializer initializer])
+    (if (> index count) '() (cons (initializer index) (loop (+ index 1) initializer)))))
+
+; Returns a new list with a new item inserted before the given index.
+; insert-at
+; insert-many-at
+
+; Returns true if the list contains no elements, false otherwise.
+(: is-empty (All (T) (-> (Listof T) Boolean)))
+(define (is-empty input)
+  (= (length input) 0))
+
+; Indexes into the list. The first element has index 0.
+(: item (All (T) (-> Integer (Listof T) T)))
+(define (item index input)
+  (when (or (> index (length input)) (< index 0))
+    (error "Index out of bounds of the collection."))
+
+  (let loop ([current 0] [index index] [input input])
+    (if (= current index) (car input) (loop (+ current 1) index (cdr input)))))
+
+; Applies the given function to each element of the collection.
+(: iter (All (T) (-> (-> T Void) (Listof T) Void)))
+(define (iter action input)
+  (if (null? input)
+      (void)
+      (begin
+        (action (car input))
+        (iter action (cdr input)))))
+
+; Applies the given function to two collections simutaneously. The collections must
+; have identical size.
+(: iter-two (All (T1 T2) (-> (-> T1 T2 Void) (Listof T1) (Listof T2) Void)))
+(define (iter-two action list-one list-two)
+  (length-check list-one list-two)
+
+  (if (null? list-one)
+      (void)
+      (begin
+        (action (car list-one) (car list-two))
+        (iter-two action (cdr list-one) (cdr list-two)))))
+
+; Applies the given function to each element of the collection.
+; The integer passsed to the function indicates the index of the element.
+(: iter-i (All (T) (-> (-> Integer T Void) (Listof T) Void)))
+(define (iter-i action input)
+  (let loop ([index 0] [action action] [input input])
+    (if (null? input)
+        (void)
+        (begin
+          (action index (car input))
+          (loop (+ index 1) action (cdr input))))))
+
+; Applies the given function to two collections simultaneously. The collections must have identical
+; size. The integer passed to the function indicates the index of element.
+(: iter-i-two (All (T1 T2) (-> (-> Integer T1 T2 Void) (Listof T1) (Listof T2) Void)))
+(define (iter-i-two action list-one list-two)
+  (length-check list-one list-two)
+
+  (let loop ([index 0] [action action] [list-one list-one] [list-two list-two])
+    (if (null? list-one)
+        (void)
+        (begin
+          (action index (car list-one) (car list-two))
+          (loop (+ index 1) action (cdr list-one) (cdr list-two))))))
+
+; Returns the last element of the list.
+(: last (All (T) (-> (Listof T) T)))
+(define (last input)
+  (if (null? (cdr input)) (car input) (last (cdr input))))
+
+; Returns the length of the list.
+(: length (All (T) (-> (Listof T) Integer)))
+(define (length input)
+  (let loop ([index 0] [input input])
+    (if (null? input) index (loop (+ index 1) (cdr input)))))
+
+; Builds a new collection whose elements are the results of applying the given
+; function to each of the elements of the collection.
+(: map (All (T1 T2) (-> (-> T1 T2) (Listof T1) (Listof T2))))
+(define (map mapping input)
+  (if (null? input) '() (cons (mapping (car input)) (map mapping (cdr input)))))
+
+; Builds a new collection whose elements rea the results of applying the given
+; function to the corresponding elements of the two collections pairwise.
+; map-two
+; map-three
+
+; map-fold
+; map-fold-back
+
+; Builds a new collection whose elements are the results of applying the given
+; function to each of the elements of the collection. The integer index passed to the function
+; indicates the index (from 0) of the element being transformed.
+(: map-i (All (T1 T2) (-> (-> Integer T1 T2) (Listof T1) (Listof T2))))
+(define (map-i mapping input)
+  (let loop ([index 0] [mapping mapping] [input input])
+    (if (null? input) '() (cons (mapping index (car input)) (loop (+ index 1) mapping (cdr input))))))
+
+; Like map-i, but mapping corresponding elements from two lists of equal length.
+(: map-i-two (All (T1 T2 T3) (-> (-> Integer T1 T2 T3) (Listof T1) (Listof T2) (Listof T3))))
+(define (map-i-two mapping list-one list-two)
+  (length-check list-one list-two)
+
+  (let loop ([index 0] [mapping mapping] [list-one list-one] [list-two list-two])
+    (if (null? list-one)
+        '()
+        (cons (mapping index (car list-one) (car list-two))
+              (loop (+ index 1) mapping (cdr list-one) (cdr list-two))))))
+
+; Returns the greatest of all elements of the list.
+(: max (-> (Listof Real) Real))
+(define (max input)
+  (fold (fn ([state : Real] [x : Real]) (if (< state x) x state)) min-int input))
+
+; TODO: I can't write this like this, I need state to be a real for comparison
+; so I need to implement some more stuff.
+; I might want to just do a custom comparator I can pass around.
+; Returns the greatest of all elements of the list using the projection.
+; (: max-by (-> (All (T) (-> (-> Real T Real) (Listof T) T))))
+; (define (max-by projection input)
+;  (fold (fn ([state : Real] [x : T]) (if (< state (projection x)) x state)) min-int input))
+
+; Returns the lowest of all elements of the list.
+(: min (-> (Listof Real) Real))
+(define (min input)
+  (fold (fn ([state : Real] [x : Real]) (if (> state x) x state)) max-int input))
+
+; min-by
+
+; of-array
+; of-seq
+
+; Returns a list of each element in the input list and it's predecssor, with the
+; exception of the first element which is only returned as the predecessor of the second element.
+(: pair-wise (All (T) (-> (Listof T) (Listof (Tuple T T)))))
+(define (pair-wise input)
+  (match input
+    ['() '()]
+    [(list _) '()]
+    [(list e1 e2) (list (Tuple e1 e2))]
+    [(list e1 e2 rest ...) (cons (Tuple e1 e2) (pair-wise (cons e2 rest)))]))
+
+; Splits the collection into two collections, containing the elements for which the given predicate
+; returns True and False respectively. Elmenet order is preserved in both of the created lists.
+(: partition (All (T) (-> (-> T Boolean) (Listof T) (Tuple (Listof T) (Listof T)))))
+(define (partition predicate input)
+  (fold
+   (fn
+    ([state : (Tuple (Listof T) (Listof T))] [x : T])
+    (cond
+      [(equal? (predicate x) #t) (Tuple (append (Tuple-First state) (list x)) (Tuple-Second state))]
+      [(equal? (predicate x) #f) (Tuple (Tuple-First state) (append (Tuple-Second state) (list x)))]
+      [else state]))
+   (Tuple (ann (list) (Listof T)) (ann (list) (Listof T)))
+   input))
+
+; Applies the given function to successive elements, returning the first result where function
+; returns Some(x) for some x. If not such element exists, raise "KeyNotFound".
+(: pick (All (T1 T2) (-> (-> T1 (Maybe T2)) (Listof T1) T2)))
+(define (pick chooser input)
+  (match input
+    ['() (error "Key Not Found.")]
+    [(Some v) v]
+    [_ (pick chooser (cdr input))]))
+
+; Apply a function to each element of the collection, threading an accumulator argument through
+; the computation. Apply the function to the first wo elements of the list. Then feed this result
+; into the function along with the third element and so on.
+(: reduce (All (T) (-> (-> T T T) (Listof T) T)))
+(define (reduce reduction input)
+  (fold (fn (acc item) (reduction acc item)) (head input) (tail input)))
+
+; TODO: reduce-back
+; TODO: remove-at
+; TODO: remove-many-at
+
+; TODO: Creates a list by replicating the given initial value.
+; (: replicate (All (-> (Integer) (T) (Listof T))))
+; (define (replicate count initial)
+;  ())
+
+; Reverse the input list.
+(: rev (All (T) (-> (Listof T) (Listof T))))
+(define (rev input)
+  (reverse input))
+
+; Like fold, but returns all intermediary states.
+(: scan (All (State T) (-> (-> State T State) State (Listof T) (Listof State))))
+(define (scan folder state input)
+  (if (null? input)
+      '()
+      (append (list (folder state (head input)))
+              (scan folder (folder state (head input)) (tail input)))))
+
+; Like scan, but works from right to left instead of left to right.
+(: scan-back (All (State T) (-> (-> State T State) State (Listof T) (Listof State))))
+(define (scan-back folder state input)
+  (scan folder state (rev input)))
+
+;(: skip (All (T) (-> Integer (Listof T) (Listof T))))
+;(define (skip value input)
+;  (let loop ([counter : Integer] [value : Integer] [input : (Listof T)]))
+;    (if (= counter value)  0))
+
+(: tail (All (T) (-> (Listof T) (Listof T))))
+(define (tail input)
+  (cdr input))
 
 (module+ test
   (require typed/rackunit)
@@ -242,8 +533,104 @@
 
   (test-false "Find-index works, returns false." (find-index (fn ([x : Integer]) (= 0 x)) '(1 2 3 4)))
 
+  (test-eq? "Find-index-back works." (find-index-back (fn ([x : Integer]) (= 0 x)) '(4 3 2 0 1)) 3)
+
   (test-eq? "Fold works." (fold (fn ([state : Integer] [x : Integer]) (+ x state)) 0 '(1 2 3 4)) 10)
+
+  (test-eq? "Fold-two works."
+            (fold-two (fn ([state : Integer] [x : Integer] [y : Integer]) (+ x y state))
+                      0
+                      '(1 2 3 4)
+                      '(1 2 3 4))
+            20)
+
+  (test-eq? "Fold-back works."
+            (fold-back (fn ([state : Integer] [x : Integer]) (+ x state)) 0 '(1 2 3 4))
+            10)
+
+  (test-eq? "Fold-back-two works."
+            (fold-back-two (fn ([state : Integer] [x : Integer] [y : Integer]) (+ x y state))
+                           0
+                           '(1 2 3 4)
+                           '(1 2 3 4))
+            20)
 
   (test-true "For-all returns true." (for-all (fn ([x : Integer]) (= x 1)) '(1 1 1 1)))
 
-  (test-false "For-all returns false." (for-all (fn ([x : Integer]) (= x 1)) '(1 2 3 4 5))))
+  (test-false "For-all returns false." (for-all (fn ([x : Integer]) (= x 1)) '(1 2 3 4 5)))
+
+  (test-equal? "Group-by works."
+               (group-by (fn ([x : Person]) (Person-Name x)) people)
+               (list (Tuple "Peter" (list (Person "Peter" 55) (Person "Peter" 44)))
+                     (Tuple "Ted" (list (Person "Ted" 33)))
+                     (Tuple "Tim" (list (Person "Tim" 55) (Person "Tim" 23)))
+                     (Tuple "Elana" (list (Person "Elana" 18)))
+                     (Tuple "Jim" (list (Person "Jim" 22) (Person "Jim" 33)))))
+
+  (test-eq? "Head works." (head '(1 2 3 4)) 1)
+
+  (test-equal? "Indexed works."
+               (indexed '(1 2 3 4))
+               (list (Tuple 0 1) (Tuple 1 2) (Tuple 2 3) (Tuple 3 4)))
+
+  (test-equal? "Init works."
+               (init 10
+                     (fn ([x : Integer]) (+ x 1)))
+               '(1 2 3 4 5 6 7 8 9 10 11))
+
+  (test-eq? "Item works." (item 2 (list 1 2 23 4 5)) 23)
+  (test-exn "Item index invalid, negative." exn:fail? (fn () (item -23 '(1 2))))
+  (test-exn "Item index invalid, too high." exn:fail? (fn () (item 44 '(1 2))))
+
+  (test-case "Iter works. Not really a test, just a check to make sure iter works."
+    (define start '(1 2 3 4))
+    (iter (fn ([x : Integer]) (set! x (+ x 1))) start))
+
+  (test-eq? "Last works." (last '(1 2 3 4)) 4)
+
+  (test-eq? "Last works again." (last '(1)) 1)
+
+  (test-eq? "Length works." (length '(1 2 3 4)) 4)
+
+  (test-equal? "Map works." (map (fn ([x : Integer]) (+ x 1)) '(1 2 3 4)) '(2 3 4 5))
+
+  (test-equal? "Map-i works."
+               (map-i (fn ([x : Integer] [y : Integer]) (+ x y)) '(1 2 3 4))
+               '(1 3 5 7))
+
+  (test-equal?
+   "Map-i-two works."
+   (map-i-two (fn ([x : Integer] [y : Integer] [z : Integer]) (+ x y z)) '(1 2 3 4) '(1 2 3 4))
+   '(2 5 8 11))
+
+  (test-eq? "Max works." (max '(1 2 3 4)) 4)
+  (test-eq? "Max works, more numbers" (max '(-2000 344444 -10000 0 50000 2)) 344444)
+
+  (test-eq? "Min works." (min '(1 2 3 4)) 1)
+
+  (test-equal? "Pair-wise works." (pair-wise '(1 2 3 4)) (list (Tuple 1 2) (Tuple 2 3) (Tuple 3 4)))
+  (test-equal? "Pair-wise works, bad example." (pair-wise '(1)) '())
+  (test-equal? "Pair-wise, on pair." (pair-wise '(1 2)) (list (Tuple 1 2)))
+
+  (test-equal? "Partition works."
+               (partition (fn ([x : Integer]) (> x 1)) '(1 2 1 3 4 5 1 1))
+               (Tuple (list 2 3 4 5) (list 1 1 1 1)))
+
+  ; Test for chooser
+  ;(test-equal? "Choose works."
+  ;             (choose (fn ([x : Integer]) (if (> x 1) (Some "works") (None))) '(1 2 1 3 4 5 1 1))
+  ;             "works")
+
+  (test-equal? "Reduce works."
+               (reduce (fn ([acc : Integer] [x : Integer]) (+ acc x)) (list 1 2 3 4))
+               10)
+
+  (test-equal? "Rev works." (rev (list 1 2 3 4)) (list 4 3 2 1))
+
+  (test-equal? "Scan works."
+               (scan (fn ([acc : Integer] [x : Integer]) (+ acc x)) 0 (list 1 2 3 4))
+               (list 1 3 6 10))
+
+  (test-equal? "Scan-back works."
+               (scan (fn ([acc : Integer] [x : Integer]) (+ acc x)) 0 (list 1 2 3 4))
+               (list 1 3 6 10)))
