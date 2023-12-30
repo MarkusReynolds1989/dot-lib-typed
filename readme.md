@@ -1,4 +1,4 @@
-# dot-lib
+# dot-lib-typed
 
 [![Build Actions Status](https://github.com/markusreynolds1989/dot-lib-typed/workflows/Build/badge.svg)](https://github.com/markusreynolds1989/dot-lib-typed/actions)
 
