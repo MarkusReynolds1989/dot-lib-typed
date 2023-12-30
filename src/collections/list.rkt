@@ -432,6 +432,11 @@
 (define (scan-back folder state input)
   (scan folder state (rev input)))
 
+(: skip (All (T) (-> Integer (Listof T) (Listof T))))
+(define (skip value input)
+  (let loop ([counter : Integer] [value : Integer] [input : (Listof T)]))
+    (if (= counter value)  ))
+
 (: tail (All (T) (-> (Listof T) (Listof T))))
 (define (tail input)
   (cdr input))
