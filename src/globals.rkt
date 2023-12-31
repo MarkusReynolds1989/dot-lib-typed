@@ -15,4 +15,6 @@
 (define-type (Maybe T) (U None (Some T)))
 ;(define-type (Result T) (U T String))
 
+(struct (T) Array ([v : (Mutable-Vectorof T)]))
+
 (provide (all-defined-out))

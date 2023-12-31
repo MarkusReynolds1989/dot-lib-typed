@@ -5,19 +5,36 @@
          racket/vector
          threading)
 
+; Returns an empty array.
+(define (empty)
+  (Array (vector)))
+
+(: length (All (T) (-> (Array T) Integer)))
+(define (length array)
+  (vector-length (Array-v array)))
+
+; Gets an element of an array.
+(: get (All (T) (-> (Array T) Integer T)))
+(define (get input index)
+  (vector-ref (Array-v input) index))
+
+(: append (All (T) (-> (Array T) (Array T) (Array T))))
+(define (append array-one array-two)
+  (Array (vector-append (Array-v array-one) (Array-v array-two))))
+
 ; Returns a new array that contains all pairings of elements from the first and second arrays.
-(: all-pairs (All (T U) (-> (Vectorof T) (Vectorof U) (Vectorof (List T U)))))
-(define (all-pairs array-one array-two)
+;(: all-pairs (All (T U) (-> (Array T) (Array T) (Array (List T U)))))
+;(define (all-pairs array-one array-two)
 
-  (define result (empty))
+;  (define result (empty))
 
-  (for ([index (in-range 0 (length array-one))])
-    (set! result (append result (vector (list (get array-one index) (get array-two index))))))
-  result)
+;  (for ([index (in-range 0 (length array-one))])
+;    (set! result (append result (vector (list (get array-one index) (get array-two index))))))
+;  result)
 
 ; Builds a new array that contains the elements of the first
 ; array followed by the elements of the second.
-(: append (All (T U) (-> (Vectorof T) (Vectorof U) (Vector T U))))
+#| (: append (All (T U) (-> (Vectorof T) (Vectorof U) (Vector T U))))
 (define (append array-one array-two)
   (vector-append array-one array-two))
 
@@ -107,9 +124,6 @@
 ; (define (distinct-by projection input)
 ;  (~>> input (map (fn (x) (projection x))) (distinct)))
 
-; Returns an empty array.
-(define (empty)
-  (vector))
 
 ; Returns the only element of an array.
 (define (exactly-one array)
@@ -250,6 +264,7 @@
                  array-two)]))))
 
 ; Tests if all elements of hte array satisfy the given predicate.
+(: for-all (All (T U) (-> (-> T U U) U (Vectorof T) U)))
 (define (for-all predicate array)
   (let loop ([index 0] [predicate predicate] [array array])
     (cond
@@ -258,6 +273,7 @@
       [else (loop (+ index 1) predicate array)])))
 
 ; Tests if all corresponding elements of the array satisfy the given predicate pairwise.
+(: for-all-two (All (T U) (-> (-> T U U) U (Vectorof T) U)))
 (define (for-all-two predicate array-one array-two)
   (let loop ([index 0] [predicate predicate] [array-one array-one] [array-two array-two])
     (cond
@@ -265,9 +281,6 @@
       [(not (predicate (get array-one index) (get array-two index))) #f]
       [else (loop (+ 1 index) predicate array-one array-two)])))
 
-; Gets an element of an array.
-(define (get input index)
-  (vector-ref input index))
 
 ; Applies a key-generating function to each element of an array and yields an array
 ; of unique keys. Each unique key contains an array of all elements that match that key.
@@ -451,18 +464,22 @@
 ;  (vector-sort array))
 
 (define (take size input)
-  (vector-take input size))
+  (vector-take input size)) |#
 
 (provide (all-defined-out))
 
 (module+ test
-  (require rackunit)
+  (require typed/rackunit)
 
-  (test-equal? "All-pairs works correctly."
-               (all-pairs (vector 1 2 3 4) (vector 1 2 3 4))
-               (vector '(1 1) '(2 2) '(3 3) '(4 4)))
+  (test-equal? "Append test."
+               (append (Array (vector 1 2 3)) (Array (vector 4 5 6)))
+               (vector 1 2 3 4 5 6)))
 
-  (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
+;(test-equal? "All-pairs works correctly."
+;             (all-pairs (vector 1 2 3 4) (vector 1 2 3 4))
+;             (vector '(1 1) '(2 2) '(3 3) '(4 4))))
+
+#| (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
 
   (test-equal? "Average works correctly." (average (vector 2 2 4 4)) 3)
 
@@ -653,4 +670,4 @@
 
   (test-equal? "Split-at complicated." (split-at 1 (vector 1 2 3 4 5)) (list #(1) #(2 3 4 5)))
 
-  (test-equal? "Split-at at the end." (split-at 4 (vector 1 2 3 4 5)) (list #(1 2 3 4) #(5))))
+  (test-equal? "Split-at at the end." (split-at 4 (vector 1 2 3 4 5)) (list #(1 2 3 4) #(5))) |#
