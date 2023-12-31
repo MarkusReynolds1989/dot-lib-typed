@@ -1,4 +1,5 @@
-#lang typed/racket/base
+#lang typed/racket
+(require racket/syntax)
 
 (define-syntax-rule (fn args body ...)
   (lambda args
@@ -15,6 +16,7 @@
 (define-type (Maybe T) (U None (Some T)))
 ;(define-type (Result T) (U T String))
 
-(struct (T) Array ([v : (Mutable-Vectorof T)]))
+; Arrays are always mutable collections of a fixed length.
+(struct (T) Array ([v : (Mutable-Vectorof T)]) #:transparent)
 
 (provide (all-defined-out))
