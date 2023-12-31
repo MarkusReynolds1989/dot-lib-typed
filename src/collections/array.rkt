@@ -17,6 +17,7 @@
 
 ; Builds a new array that contains the elements of the first
 ; array followed by the elements of the second.
+(: append (All (T U) (-> (Vectorof T) (Vectorof U) (Vector T U))))
 (define (append array-one array-two)
   (vector-append array-one array-two))
 
@@ -58,6 +59,7 @@
 ; TODO: concat - may not need this, this is to take Seqs of arrays and concat them into one.
 
 ; Tests if the array contains the specified element.
+(: contains (All (T) (-> T (Vectorof T) Boolean)))
 (define (contains value input)
   (let loop ([index 0] [value value] [input input])
     (cond
@@ -133,6 +135,7 @@
          [else (loop (+ 1 low-pointer) (- high-pointer 1) predicate array)]))]))
 
 ; Tests if any pair of corresponding elements of the arrays satisifes the given predicate.
+(: exists-two (All (T U) (-> (-> T U Boolean) (Vectorof T) (Vectorof U) Boolean)))
 (define (exists-two predicate array-one array-two)
   (let loop ([index 0] [predicate predicate] [array-one array-one] [array-two array-two])
     (cond
@@ -153,6 +156,7 @@
         input))
 
 ; Returns the first element for which the given function returns 'true', else false.
+(: find (All (T) (-> (-> T Boolean) (Vectorof T) T)))
 (define (find predicate input)
   (let loop ([index 0] [predicate predicate] [input input])
     (cond
@@ -161,6 +165,7 @@
       [else (loop (+ 1 index) predicate input)])))
 
 ; Returns the last element for which the given function returns 'true', else false.
+(: find-back (All (T) (-> (-> T Boolean) (Vectorof T) T)))
 (define (find-back predicate input)
   (let loop ([index (- (length input) 1)] [predicate predicate] [input input])
     (cond
@@ -170,6 +175,7 @@
 
 ; Returns the index of the first element in the array that satisifes the given predicate.
 ; If the element doesn't exist, return false.
+(: find-index (All (T) (-> (-> T integer) (Vectorof T) integer)))
 (define (find-index predicate input)
   (let loop ([index 0] [predicate predicate] [input input])
     (cond
@@ -179,6 +185,7 @@
 
 ; Returns the index of the last element in the array that satisfies the given predicate.
 ; If the element doesn't exist, return false.
+(: find-index-back (All (T) (-> (-> T integer) (Vectorof T) integer)))
 (define (find-index-back predicate input)
   (let loop ([index (- (length input) 1)] [predicate predicate] [input input])
     (cond
@@ -189,6 +196,7 @@
 ; Applies a function to each element of the collection, threading an accumulator
 ; argument through the computation. If the input function is f and the elements are
 ; i0..iN then computes f(...(f s i0)...) iN.
+(: fold (All (T U) (-> (-> T U U) U (Vectorof T) U)))
 (define (fold folder state input)
   (let loop ([index 0] [folder folder] [state state] [array input])
     (cond
@@ -214,6 +222,7 @@
 ; Applies a function to each element of the array, starting from the end, threading
 ; an accumulator argument through the computation. If the input function is f and the elements
 ; are i0...iN then computes f i0 (...(f iN s))
+(: fold-back (All (T U) (-> (-> T U U) U (Vectorof T) U)))
 (define (fold-back folder state input)
   (let loop ([index (- (length input) 1)] [folder folder] [state state] [input input])
     (cond
