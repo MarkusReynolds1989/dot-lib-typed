@@ -1,4 +1,4 @@
-#lang typed/racket/base
+#lang typed/racket/deep
 
 (require "../globals.rkt"
          (prefix-in Map. "map.rkt")
@@ -6,58 +6,137 @@
          threading)
 
 ; Returns an empty array.
-;(: empty (All T (-> T)))
-;(define (empty)
-;  (Array (vector)))
+(: empty (All (T) (-> (Vectorof T))))
+(define (empty)
+  (vector))
 
-(: length (All (T) (-> (Array T) Integer)))
+(: length (All (T) (-> (Vectorof T) Integer)))
 (define (length array)
-  (vector-length (Array-v array)))
+  (vector-length array))
 
 ; Gets an element of an array.
-(: get (All (T) (-> (Array T) Integer T)))
-(define (get input index)
-  (vector-ref (Array-v input) index))
+(: get (All (T) (-> Integer (Vectorof T) T)))
+(define (get index input)
+  (vector-ref input index))
 
 ; Builds a new array that contains the elements of the first
 ; array followed by the elements of the second.
-(: append (All (T) (-> (Array T) (Array T) (Array T))))
+(: append (All (T) (-> (Vectorof T) (Vectorof T) (Vectorof T))))
 (define (append array-one array-two)
-  (Array (vector-append (Array-v array-one) (Array-v array-two))))
+  (vector-append array-one array-two))
+
+;(: all-pairs (All (T U) (-> (Vectorof T) (Vectorof U) (Vectorof (Tuple T U)))))
+;(define (all-pairs array-one array-two)
+
+;  (: result (Vectorof (Tuple T U)))
+;  (define result (make-vector 0 (list)))
+
+;  (for ([index (in-range 0 (length array-one))])
+;    (set! result (append result (vector (Tuple (get array-one index) (get array-two index))))))
+;  result)
 
 ; Applies a function to each element of the collection, threading an accumulator
 ; argument through the computation. If the input function is f and the elements are
 ; i0..iN then computes f(...(f s i0)...) iN.
-(: fold (All (T State) (-> (-> State T State) State (Array T) State)))
+
+(: fold (All (T State) (-> (-> State T State) State (Vectorof T) State)))
 (define (fold folder state input)
-  (let loop ([index 0] [folder folder] [state state] [array input])
+  (let loop ([index 0]
+             [folder folder]
+             [state state]
+             [array input])
     (cond
       [(= index (length array)) state]
-      [else (loop (+ 1 index) folder (folder state (get array index)) array)])))
+      [else (loop (+ 1 index) folder (folder state (get index array)) array)])))
+
+(: map (All (T U) (-> (-> T U) (Vectorof T) (Vectorof U))))
+(define (map mapper input)
+  (let loop ([index 0]
+             [mapper mapper]
+             [state (ann (vector) (Vectorof U))]
+             [array input])
+    (cond
+      [(= index (length array)) state]
+      [else (loop (+ 1 index) mapper (append state (vector (mapper (get index array)))) array)])))
 
 ; Returns the average of the values in a non-empty array.
-(: average (-> (Array Number) Number))
+(: average (-> (Vectorof Number) Number))
 (define (average source)
   (when (= 0 (length source))
-    (error "List empty error."))
+    (error "Array empty error."))
   (/ (fold (fn ([acc : Number] [item : Number]) (+ acc item)) 0 source) (length source)))
 
 ; Reads a range of elements from the first array and write them into the second.
-(: blit (All (T) (-> (Array T) Integer (Array T) Integer Integer (Array T))))
+(: blit (All (T) (-> (Vectorof T) Integer (Vectorof T) Integer Integer (Vectorof T))))
 (define (blit dest dest-start src [src-start 0] [src-end (length src)])
-  (vector-copy! (Array-v dest) dest-start (Array-v src) src-start src-end)
+  (vector-copy! dest dest-start src src-start src-end)
   dest)
 
-;Returns the average of the elements of the array.
-;(define (average input)
+; Tests if the array contains the specified element.
+(: contains (All (T) (-> T (Vectorof T) Boolean)))
+(define (contains value input)
+  (let loop ([index 0]
+             [value value]
+             [input input])
+    (cond
+      [(= index (length input)) #f]
+      [(equal? (get index input) value) #t]
+      [else (loop (+ 1 index) value input)])))
 
-;  (/ (sum input) (length input)))
+; Returns the only element of an array.
+(: exactly-one (All (T) (-> (Vectorof T) Boolean)))
+(define (exactly-one array)
+  (= 1 (length array)))
+
+; Sets an element of an array.
+(: set (All (T) (-> Integer T (Vectorof T) Void)))
+(define (set index value array)
+  (vector-set! array index value))
+
+; Applies the given function to each element of the array. Returns the new array
+; comprised of the results x for each element where the function returns Some(x).
+(: choose (All (T) (-> (-> T (Maybe T)) (Vectorof T) (Vectorof T))))
+(define (choose projection input)
+  (fold (fn ([acc : (Vectorof T)] [x : T])
+            (if (Some? (projection x))
+                (append acc (vector x))
+                acc))
+        (ann (empty) : (Vectorof T))
+        input))
+
+(provide (all-defined-out))
+
+(module+ test
+  (require typed/rackunit)
+
+  (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
+
+  (test-eq? "Fold test, array should add up to 10."
+            (fold (fn ([acc : Integer] [item : Integer]) (+ acc item)) 0 (vector 1 2 3 4))
+            10)
+
+  (test-equal? "Empty test" (empty) (vector))
+
+  (: numbers (Vectorof Number))
+  (define numbers (vector 2 2 4 4))
+
+  (test-equal? "Average works correctly." (average numbers) 3)
+
+  (test-equal? "Blit works correctly." (blit (vector 1 2 3) 0 (vector 4 5 6) 0 3) (vector 4 5 6))
+
+  (test-true "Contains test should resolve to true." (contains -100 (vector 1 2 3 4 100 23 -100)))
+
+  (test-false "Contains test should resolve to false."
+              (contains "blue" (vector "red" "yellow" "green")))
+
+  (test-false "Exactly-one test, array has more than one." (exactly-one (vector 1 2)))
+  (test-true "Exactly-one test, array has exactly one." (exactly-one (vector 1))))
 
 ; Returns a new array that contains all pairings of elements from the first and second arrays.
-;(: all-pairs (All (T U) (-> (Array T) (Array U) (Array (Listof (List T U))))))
+;(: all-pairs (All (T U) (-> (Mutable-Vectorof T) (Mutable-Vectorof U) (Mutable-Vectorof (List T U)))))
 ;(define (all-pairs array-one array-two)
 
-;  (: result (Array (Listof (List T U))))
+;  (: result (Array (Mutable-Vectorof (List T U))))
 ;  (define result (Array (make-vector 0 (list))))
 
 ;  (for ([index (in-range 0 (length array-one))])
@@ -71,11 +150,6 @@
 (define (average-by projection input)
   (define mapped-values (map projection input))
   (average mapped-values))
-
-
-; TODO: choose - May only need to be used for typed racket where we have an option type.
-; Applies the given function to each element of the array. Returns the new array
-; comprised of the results x for each element where the function returns Some(x).
 
 ; Divides the input array into chunks of size at most chunk-size.
 (: chunk-by-size (All (T) (-> Number Number (Vectorof T) (Vectorof (Listof T)))))
@@ -143,31 +217,29 @@
 ; occurences are discarded.
 ; (define (distinct-by projection input)
 ;  (~>> input (map (fn (x) (projection x))) (distinct)))
+|#
 
-
-; Returns the only element of an array.
-(define (exactly-one array)
-  (and (= (length array) 1) (get array 0)))
+; Tests if any element of the array satisfies the given predicate.
+;(: exists (All (T) (-> (-> T Boolean) (Vectorof T) Boolean)))
+;(define (exists predicate array)
+;  (cond
+;    [(= (length array) 0) #f]
+;    [(= (length array) 1) (predicate (get array 0))]
+;    [(> (length array) 1)
+;     (let loop ([low-pointer 0]
+;                [high-pointer (- (length array) 1)]
+;                [predicate predicate]
+;                [array array])
+;       (cond
+;         [(= high-pointer low-pointer) #f]
+;         [(or (predicate (get array low-pointer)) (predicate (get array high-pointer))) #t]
+;         [else (loop (+ 1 low-pointer) (- high-pointer 1) predicate array)]))]))
 
 ; TODO: except - Come back to this after sequence is ready.
 ; Returns a new list with the distinct elements of the input array with do not appear
 ; in the items-to-exclude sequence, using generic hash and equality comparison to compare values.
 
-; Tests if any element of the array satisfies the given predicate.
-(define (exists predicate array)
-  (cond
-    [(= (length array) 0) #f]
-    [(= (length array) 1) (predicate (get array 0))]
-    [(> (length array) 1)
-     (let loop ([low-pointer 0]
-                [high-pointer (- (length array) 1)]
-                [predicate predicate]
-                [array array])
-       (cond
-         [(= high-pointer low-pointer) #f]
-         [(or (predicate (get array low-pointer)) (predicate (get array high-pointer))) #t]
-         [else (loop (+ 1 low-pointer) (- high-pointer 1) predicate array)]))]))
-
+#|
 ; Tests if any pair of corresponding elements of the arrays satisifes the given predicate.
 (: exists-two (All (T U) (-> (-> T U Boolean) (Vectorof T) (Vectorof U) Boolean)))
 (define (exists-two predicate array-one array-two)
@@ -226,7 +298,6 @@
       [(< index 0) #f]
       [(predicate (get input index)) index]
       [else (loop (- index 1) predicate input)])))
-
 
 ; Applies a function to pairs of elements drawn from teh two collections, left-to-right,
 ; threading an acumlator argument through the computation. The two input array's must have the
@@ -457,9 +528,6 @@
 (define (partition predicate input)
   0)
 
-; Sets an element of an array.
-(define (set array index value)
-  (vector-set! array index value))
 
 (define (skip size array)
   (vector-drop array size))
@@ -473,28 +541,6 @@
 
 (define (take size input)
   (vector-take input size)) |#
-
-(provide (all-defined-out))
-
-(module+ test
-  (require typed/rackunit)
-
-  (test-equal? "Append test."
-               (append (Array (vector 1 2 3)) (Array (vector 4 5 6)))
-               (Array (vector 1 2 3 4 5 6)))
-
-  (test-eq? "Fold test, array should add up to 10."
-            (fold (fn ([acc : Integer] [item : Integer]) (+ acc item)) 0 (Array (vector 1 2 3 4)))
-            10)
-
-  (: numbers (Mutable-Vectorof Number))
-  (define numbers (vector 2 2 4 4))
-
-  (test-equal? "Average works correctly." (average (Array numbers)) 3)
-
-  (test-equal? "Blit works correctly."
-               (blit (Array (vector 1 2 3)) 0 (Array (vector 4 5 6)) 0 3)
-               (Array (vector 4 5 6))))
 
 ;(test-equal? "All-pairs works correctly."
 ;             (all-pairs (vector 1 2 3 4) (vector 1 2 3 4))
@@ -531,11 +577,8 @@
   (test-equal? "Distinct-by works."
                (distinct-by (fn (x) (string-length x)) #("one" "one" "three" "three"))
                #(3 5))
-
-  (test-false "Exactly-one test, array has more than one." (exactly-one (vector 1 2)))
-
-  (test-eq? "Exactly-one test, array has exactly one." (exactly-one (vector 1)) 1)
-
+|#
+#|
   (test-true "Exists test, 1 is in the array." (exists (fn (item) (= item 1)) (vector 1 2 3 4)))
 
   (test-false "Exists test, blue is not in the array."

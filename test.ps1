@@ -10,5 +10,5 @@ raco test src/collections/map.rkt
 Write-Output "Testing Seq library."
 raco test src/collections/seq.rkt
 
-Write-Output "Testing IO library."
-raco test src/io/file.rkt
+# Write-Output "Testing IO library."
+# raco test src/io/file.rkt

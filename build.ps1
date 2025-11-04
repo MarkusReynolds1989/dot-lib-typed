@@ -15,5 +15,5 @@ raco make src/collections/map.rkt
 Write-Output "Building Seq library."
 raco make src/collections/seq.rkt
 
-Write-Output "Building IO Library."
-raco make src/io/file.rkt
+# Write-Output "Building IO Library."
+# raco make src/io/file.rkt

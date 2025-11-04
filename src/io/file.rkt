@@ -1,4 +1,4 @@
-#lang racket/base
+#lang typed/racket/base
 (require racket/file)
 
 ;;; This only works for text files.
@@ -10,6 +10,8 @@
 
 (define (read-all-text file-path)
   (file->string file-path))
+
+(provide (all-defined-out))
 
 (module+ test
   (require rackunit)

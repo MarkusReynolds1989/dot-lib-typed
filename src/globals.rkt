@@ -17,6 +17,7 @@
 ;(define-type (Result T) (U T String))
 
 ; Arrays are always mutable collections of a fixed length.
+; Useless wrapper.
 (struct (T) Array ([v : (Mutable-Vectorof T)]) #:transparent)
 
 (provide (all-defined-out))

@@ -23,7 +23,9 @@
 ; elements of the second list.
 (: append (All (T) (-> (Listof T) (Listof T) (Listof T))))
 (define (append list-one list-two)
-  (if (null? list-one) list-two (cons (car list-one) (append (cdr list-one) list-two))))
+  (if (null? list-one)
+      list-two
+      (cons (car list-one) (append (cdr list-one) list-two))))
 
 ; Returns the average of the values in a non-empty list.
 (: average (-> (Listof Number) Number))
@@ -77,7 +79,9 @@
 (: distinct (All (T) (-> (Listof T) (Listof T))))
 (define (distinct input)
   (~>> (fold (fn ([state : (HashTable T T)] [value : T])
-                 (if (Map.contains-key value state) state (Map.add value value state)))
+                 (if (Map.contains-key value state)
+                     state
+                     (Map.add value value state)))
              (ann (hash) (HashTable T T))
              input)
        (Map.keys)))
@@ -88,7 +92,9 @@
 (define (distinct-by projection input)
   (~>> (fold (fn ([state : (HashTable Key T)] [value : T])
                  (define key (projection value))
-                 (if (Map.contains-key key state) state (Map.add key value state)))
+                 (if (Map.contains-key key state)
+                     state
+                     (Map.add key value state)))
              (ann (hash) (HashTable Key T))
              input)
        (Map.get-values)))
@@ -96,7 +102,9 @@
 ; Returns the only element of the list.
 (: exactly-one (All (T) (-> (Listof T) T)))
 (define (exactly-one input)
-  (if (= (length input) 1) (car input) (error "Expected a list with exactly one element.")))
+  (if (= (length input) 1)
+      (car input)
+      (error "Expected a list with exactly one element.")))
 
 ; Tests if any element of the list satisifes the given predicate.
 (: exists (All (T) (-> (-> T Boolean) (Listof T) Boolean)))
@@ -134,7 +142,9 @@
 ; Returns the first element for which the given function returns true.
 (: find-index (All (T) (-> (-> T Boolean) (Listof T) (U Number False))))
 (define (find-index predicate input)
-  (let loop ([index 0] [predicate predicate] [input input])
+  (let loop ([index 0]
+             [predicate predicate]
+             [input input])
     (cond
       [(null? input) #f]
       [(predicate (car input)) index]
@@ -143,7 +153,9 @@
 ; Returns the last element for which the given function returns true.
 (: find-index-back (All (T) (-> (-> T Boolean) (Listof T) (U Number False))))
 (define (find-index-back predicate input)
-  (let loop ([index (- (length input) 1)] [predicate predicate] [input (reverse input)])
+  (let loop ([index (- (length input) 1)]
+             [predicate predicate]
+             [input (reverse input)])
     (cond
       [(null? input) #f]
       [(predicate (car input)) index]
@@ -153,7 +165,9 @@
 ; argument through the computation.
 (: fold (All (T State) (-> (-> State T State) State (Listof T) State)))
 (define (fold folder state input)
-  (if (null? input) state (fold folder (folder state (car input)) (cdr input))))
+  (if (null? input)
+      state
+      (fold folder (folder state (car input)) (cdr input))))
 
 ; Applies a function to each element of the two collections, threading an accumulator
 ; argument through the computation. Each collection must have the same size.
@@ -170,8 +184,12 @@
 ; threading an accumlator through the computation.
 (: fold-back (All (T State) (-> (-> State T State) State (Listof T) State)))
 (define (fold-back folder state input)
-  (let loop ([folder folder] [state state] [input (reverse input)])
-    (if (null? input) state (loop folder (folder state (car input)) (cdr input)))))
+  (let loop ([folder folder]
+             [state state]
+             [input (reverse input)])
+    (if (null? input)
+        state
+        (loop folder (folder state (car input)) (cdr input)))))
 
 ; Applies a function to corresponding elements of two collections, threading an
 ; accumulator argument through the computation. The collections must have identical size.
@@ -225,15 +243,21 @@
 ; paired with the index (from 0) of each element.
 (: indexed (All (T) (-> (Listof T) (Listof (Tuple Integer T)))))
 (define (indexed input)
-  (let loop ([index 0] [input input])
-    (if (null? input) '() (cons (Tuple index (car input)) (loop (+ index 1) (cdr input))))))
+  (let loop ([index 0]
+             [input input])
+    (if (null? input)
+        '()
+        (cons (Tuple index (car input)) (loop (+ index 1) (cdr input))))))
 
 ; Creates a list of calling the given generator on each index.
 (: init (All (T) (-> Integer (-> Integer T) (Listof T))))
 (define (init count
               initializer)
-  (let loop ([index 0] [initializer initializer])
-    (if (> index count) '() (cons (initializer index) (loop (+ index 1) initializer)))))
+  (let loop ([index 0]
+             [initializer initializer])
+    (if (> index count)
+        '()
+        (cons (initializer index) (loop (+ index 1) initializer)))))
 
 ; Returns a new list with a new item inserted before the given index.
 ; insert-at
@@ -250,8 +274,12 @@
   (when (or (> index (length input)) (< index 0))
     (error "Index out of bounds of the collection."))
 
-  (let loop ([current 0] [index index] [input input])
-    (if (= current index) (car input) (loop (+ current 1) index (cdr input)))))
+  (let loop ([current 0]
+             [index index]
+             [input input])
+    (if (= current index)
+        (car input)
+        (loop (+ current 1) index (cdr input)))))
 
 ; Applies the given function to each element of the collection.
 (: iter (All (T) (-> (-> T Void) (Listof T) Void)))
@@ -278,7 +306,9 @@
 ; The integer passsed to the function indicates the index of the element.
 (: iter-i (All (T) (-> (-> Integer T Void) (Listof T) Void)))
 (define (iter-i action input)
-  (let loop ([index 0] [action action] [input input])
+  (let loop ([index 0]
+             [action action]
+             [input input])
     (if (null? input)
         (void)
         (begin
@@ -291,7 +321,10 @@
 (define (iter-i-two action list-one list-two)
   (length-check list-one list-two)
 
-  (let loop ([index 0] [action action] [list-one list-one] [list-two list-two])
+  (let loop ([index 0]
+             [action action]
+             [list-one list-one]
+             [list-two list-two])
     (if (null? list-one)
         (void)
         (begin
@@ -301,19 +334,26 @@
 ; Returns the last element of the list.
 (: last (All (T) (-> (Listof T) T)))
 (define (last input)
-  (if (null? (cdr input)) (car input) (last (cdr input))))
+  (if (null? (cdr input))
+      (car input)
+      (last (cdr input))))
 
 ; Returns the length of the list.
 (: length (All (T) (-> (Listof T) Integer)))
 (define (length input)
-  (let loop ([index 0] [input input])
-    (if (null? input) index (loop (+ index 1) (cdr input)))))
+  (let loop ([index 0]
+             [input input])
+    (if (null? input)
+        index
+        (loop (+ index 1) (cdr input)))))
 
 ; Builds a new collection whose elements are the results of applying the given
 ; function to each of the elements of the collection.
 (: map (All (T1 T2) (-> (-> T1 T2) (Listof T1) (Listof T2))))
 (define (map mapping input)
-  (if (null? input) '() (cons (mapping (car input)) (map mapping (cdr input)))))
+  (if (null? input)
+      '()
+      (cons (mapping (car input)) (map mapping (cdr input)))))
 
 ; Builds a new collection whose elements rea the results of applying the given
 ; function to the corresponding elements of the two collections pairwise.
@@ -328,15 +368,22 @@
 ; indicates the index (from 0) of the element being transformed.
 (: map-i (All (T1 T2) (-> (-> Integer T1 T2) (Listof T1) (Listof T2))))
 (define (map-i mapping input)
-  (let loop ([index 0] [mapping mapping] [input input])
-    (if (null? input) '() (cons (mapping index (car input)) (loop (+ index 1) mapping (cdr input))))))
+  (let loop ([index 0]
+             [mapping mapping]
+             [input input])
+    (if (null? input)
+        '()
+        (cons (mapping index (car input)) (loop (+ index 1) mapping (cdr input))))))
 
 ; Like map-i, but mapping corresponding elements from two lists of equal length.
 (: map-i-two (All (T1 T2 T3) (-> (-> Integer T1 T2 T3) (Listof T1) (Listof T2) (Listof T3))))
 (define (map-i-two mapping list-one list-two)
   (length-check list-one list-two)
 
-  (let loop ([index 0] [mapping mapping] [list-one list-one] [list-two list-two])
+  (let loop ([index 0]
+             [mapping mapping]
+             [list-one list-one]
+             [list-two list-two])
     (if (null? list-one)
         '()
         (cons (mapping index (car list-one) (car list-two))
