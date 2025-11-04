@@ -115,9 +115,9 @@
       [else (loop (+ 1 index) value input)])))
 
 ; Returns the only element of an array.
-(: exactly-one (All (T) (-> (Vectorof T) Boolean)))
+(: exactly-one (All (T) (-> (Vectorof T) T)))
 (define (exactly-one array)
-  (= 1 (length array)))
+  (if (= 1 (length array)) (get 0 array) (raise "Array has more or less elements than 1.")))
 
 ; Sets an element of an array.
 (: set (All (T) (-> Integer T (Vectorof T) Void)))
@@ -171,8 +171,7 @@
   (test-false "Contains test should resolve to false."
               (contains "blue" (vector "red" "yellow" "green")))
 
-  (test-false "Exactly-one test, array has more than one." (exactly-one (vector 1 2)))
-  (test-true "Exactly-one test, array has exactly one." (exactly-one (vector 1))))
+  (test-eq? "Exactly-one test, array has more than one." (exactly-one (vector 1)) 1))
 
 ; Returns a new array that contains all pairings of elements from the first and second arrays.
 ;(: all-pairs (All (T U) (-> (Mutable-Vectorof T) (Mutable-Vectorof U) (Mutable-Vectorof (List T U)))))
