@@ -38,7 +38,6 @@
 ; Applies a function to each element of the collection, threading an accumulator
 ; argument through the computation. If the input function is f and the elements are
 ; i0..iN then computes f(...(f s i0)...) iN.
-
 (: fold (All (T State) (-> (-> State T State) State (Vectorof T) State)))
 (define (fold folder state input)
   (let loop ([index 0]
@@ -49,6 +48,12 @@
       [(= index (length array)) state]
       [else (loop (+ 1 index) folder (folder state (get index array)) array)])))
 
+(: fold2 (All (T U State) (-> (-> State T U State) State (Vectorof T) (Vectorof U) State)))
+(define (fold2 folder state input1 input2)
+  (let loop ([index 0] [folder folder] [state state] [array1 input1] [array2 input2])
+    (cond [(= index (length array1)) state]
+          [else (loop (+ 1 index) folder (folder state (get index array1) (get index array2)) array1 array2)])))
+
 (: map (All (T U) (-> (-> T U) (Vectorof T) (Vectorof U))))
 (define (map mapper input)
   (let loop ([index 0]
@@ -57,7 +62,33 @@
              [array input])
     (cond
       [(= index (length array)) state]
-      [else (loop (+ 1 index) mapper (append state (vector (mapper (get index array)))) array)])))
+      [else
+       (loop
+        (+ 1 index)
+        mapper
+        (append
+         state
+         (vector (mapper (get index array))))
+        array)])))
+
+(: map2 (All (T U) (-> (-> T T U) (Vectorof T) (Vectorof T) (Vectorof U))))
+(define (map2 mapper input1 input2)
+  (let loop ([index 0]
+             [mapper mapper]
+             [state (ann (vector) (Vectorof U))]
+             [array1 input1]
+             [array2 input2])
+    (cond
+      [(= index (length array1)) state]
+      [else
+       (loop
+        (+ 1 index)
+        mapper
+        (append
+         state
+         (vector (mapper (get index array1) (get index array2))))
+        array1
+        array2)])))
 
 ; Returns the average of the values in a non-empty array.
 (: average (-> (Vectorof Number) Number))
@@ -109,11 +140,22 @@
 (module+ test
   (require typed/rackunit)
 
-  (test-equal? "Append test." (append (vector 1 2 3) (vector 4 5 6)) (vector 1 2 3 4 5 6))
+  (test-equal? "Append test."
+               (append (vector 1 2 3) (vector 4 5 6))
+               (vector 1 2 3 4 5 6))
 
   (test-eq? "Fold test, array should add up to 10."
             (fold (fn ([acc : Integer] [item : Integer]) (+ acc item)) 0 (vector 1 2 3 4))
             10)
+
+  (test-eq? "Fold2 test, arrays should add up to 20."
+            (fold2
+             (fn ([acc : Integer] [item1 : Integer] [item2 : Integer])
+                 (+ acc item1 item2))
+             0
+             (vector 1 2 3 4)
+             (vector 1 2 3 4))
+            20)
 
   (test-equal? "Empty test" (empty) (vector))
 
